@@ -17,7 +17,8 @@
     "og": "bun run scripts/og/generate.mjs",
     "icons": "bun run scripts/icons.mjs",
     "sitemap": "bun run scripts/sitemap.mjs",
-    "fonts": "bun run scripts/fonts.mjs"
+    "fonts": "bun run scripts/fonts.mjs",
+    "scan-sheets": "bun run scripts/scan-sheets/generate.mjs"
   },
   "packageManager": "bun@1.4.0"
 }

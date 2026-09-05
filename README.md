@@ -27,6 +27,7 @@ bun run og         # redraw the per-route Open Graph cards (opens a local page)
 bun run icons      # redraw favicon.ico, apple-touch-icon.png, and the manifest icons
 bun run sitemap    # rewrite sitemap.xml with lastmod dates from git (deploy.sh does this too)
 bun run fonts      # rebuild the trimmed first-paint fonts and their preload headers
+bun run scan-sheets # build docs/scan-sheets.pdf, the printable sheets for the real-phone scan matrix
 bun run check      # svelte-check
 bun run build      # static output in apps/site/build
 ./deploy.sh        # build + wrangler pages deploy
