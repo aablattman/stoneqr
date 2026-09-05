@@ -6,7 +6,7 @@
 
 A free, open-source (MIT) QR code generator that runs entirely in the browser. Static codes never touch a server, so they cannot expire or be deactivated. Built for people who print: error-correction control, a print-size and scan-distance calculator, vector exports with real millimetre dimensions, logos with a coverage cap, a call-to-action frame, Photo QR, a halftone mode that blends a photo into the code (with a draggable crop box), and a decode check before every download. The generator has a Basic control set for the common case and an Advanced one for everything else. Basic sizes are four plain-language tiers (business card, menu, poster, storefront sign) whose reading distances come from the same 10:1 rule as the calculator; Advanced takes exact widths, units, and scan distances.
 
-Live at [stoneqr.app](https://stoneqr.app). Sibling of [SignUpCity](https://signupcity.app), which handles the optional editable, tracked codes.
+Live at [stoneqr.app](https://stoneqr.app). Made by [Garrett Holmes](https://www.linkedin.com/in/garrettholmes), who also makes [SignUpCity](https://signupcity.app). Questions: hello@stoneqr.app.
 
 ## Layout
 

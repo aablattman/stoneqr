@@ -1,6 +1,7 @@
 # StoneQR has no server, accounts, or database, but the generator and its engine are code
 # like any other. Report a vulnerability privately through GitHub's advisory form.
 Contact: https://github.com/malignantz/stoneqr/security/advisories/new
+Contact: mailto:hello@stoneqr.app
 Expires: 2027-09-01T00:00:00.000Z
 Preferred-Languages: en
 Canonical: https://stoneqr.app/.well-known/security.txt

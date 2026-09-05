@@ -21,6 +21,7 @@ Lighthouse on the live home page after the font work the same evening (`docs/per
 3. **Publish `@stoneqr/engine` to npm** (the last M7 item). The package currently points `main` at TypeScript source, which only works inside this workspace. Needs a `dist` build with `.d.ts` files and an exports map that keeps the site importing source in dev. One evening; a decision below.
 4. **Offline**: built 2026-09-05, see `docs/pwa.md`. The worker precaches the bundle, fonts, icons, and every prerendered page, but stores only OK responses and fails the whole install on a 404, and pages are network-first, so the deploy-cache incident cannot repeat through it: a page that is stale is refreshed on the next online visit and a bad asset is never kept.
 5. **Renew** `security.txt` before 2027-09-01.
+6. **Contact**: added 2026-09-05. The footer names Garrett and gives `hello@stoneqr.app`; `/open-source` has a "who made this and what is the catch" section; the address is the second `Contact:` in `security.txt` and appears in the README. The domain had no MX record when this was written, so the address only works once Cloudflare Email Routing forwards it; check that a test mail arrives before launch day.
 
 ## Third-party services (need your accounts)
 

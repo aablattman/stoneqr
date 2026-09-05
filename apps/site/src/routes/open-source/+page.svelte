@@ -41,6 +41,17 @@
 			built with <code>pdf-lib</code>. EPS and PNG resolution metadata are hand-written.
 		</p>
 
+		<h2>Who made this, and what is the catch</h2>
+		<p>
+			StoneQR is made by <a href={SITE.makerUrl} rel="me noopener">{SITE.maker}</a>, an executive assistant who prints a lot of QR codes and
+			got tired of the ones that stopped working when a free trial lapsed. There is no catch. The
+			site is static files on a CDN, which costs nothing to run, so it needs no account, no
+			subscription, and no plan to add either. The same person makes
+			<a href={SITE.signupcity} rel="noopener">SignUpCity</a>, a separate product for event
+			pages; StoneQR does not depend on it. Questions, a scan that failed, or a printer that
+			disagrees with the size calculator:
+			<a href="mailto:{SITE.email}">{SITE.email}</a>, or open an issue on GitHub.
+		</p>
 		<h2>Use the engine in your own project</h2>
 		<p>
 			The engine is a small, dependency-light package you can use in Node, Workers, or the browser.

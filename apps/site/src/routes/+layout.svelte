@@ -166,7 +166,9 @@
 					<li><a href={SITE.scanReport} rel="noopener">Report a scan result</a></li>
 				</ul>
 				<p class="mt-4 text-ink-3">
-					By the makers of <a href={SITE.signupcity} rel="noopener">SignUpCity</a>.
+					Made by <a href={SITE.makerUrl} rel="me noopener">{SITE.maker}</a>, who also makes
+					<a href={SITE.signupcity} rel="noopener">SignUpCity</a>. Questions or a scan that
+					failed: <a href="mailto:{SITE.email}">{SITE.email}</a>.
 				</p>
 			</div>
 		</div>
