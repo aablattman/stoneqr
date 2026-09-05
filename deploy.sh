@@ -43,7 +43,9 @@ npx wrangler pages deploy "$DIST" --project-name "$PROJECT"
 # right, fetch the canonical URLs once to warm them with the real files.
 ORIGIN="https://stoneqr.app"
 echo "→ Waiting for every asset to be served from $ORIGIN"
-ASSETS=$(cd "$DIST" && find _app/immutable -type f \( -name '*.js' -o -name '*.css' \) | sort)
+# The service worker is checked and warmed with them: it precaches every one of these on install
+# and fails the install (retrying on the next load) if any is still a 404, so it must be live too.
+ASSETS=$(cd "$DIST" && { find _app/immutable -type f \( -name '*.js' -o -name '*.css' \); echo service-worker.js; } | sort)
 COUNT=$(echo "$ASSETS" | wc -l | tr -d ' ')
 check() {
   local ct

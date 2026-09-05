@@ -9,8 +9,10 @@
 	let {
 		design,
 		pristine = true,
-		onstartover
-	}: { design: Design; pristine?: boolean; onstartover?: () => void } = $props();
+		onstartover,
+		savedCount = 0,
+		onsaved
+	}: { design: Design; pristine?: boolean; onstartover?: () => void; savedCount?: number; onsaved?: () => void } = $props();
 
 	let confirmReset = $state(false);
 	let confirmTimer: ReturnType<typeof setTimeout> | undefined;
@@ -42,17 +44,25 @@
 		{#snippet badge()}
 			{#if design.shortUrl}
 				<button type="button" class="text-sm underline" onclick={() => (design.shortUrl = null)}>Clear dynamic link</button>
-			{:else if !pristine}
-				<!-- Start over lives where the work began. It appears only once something is set, and
-				     it asks twice because it takes the saved design with it. The row is the heading's
-				     own height, so showing it moves nothing. -->
-				<button
-					type="button"
-					class="text-sm underline {confirmReset ? 'text-block' : 'text-ink-3 hover:text-ink'}"
-					onclick={startOver}
-				>
-					{confirmReset ? 'Clear everything?' : 'Start over'}
-				</button>
+			{:else if !pristine || savedCount}
+				<!-- Saving and starting over live where the work began. "Save" appears once something
+				     is set; it reads "Saved (n)" once there is a list to open. Start over asks twice
+				     because it takes the saved design with it. The row is the heading's own height,
+				     so showing either moves nothing. -->
+				<span class="flex items-center gap-3 text-sm">
+					<button type="button" class="underline text-ink-3 hover:text-ink" onclick={() => onsaved?.()}>
+						{savedCount ? `Saved (${savedCount})` : 'Save'}
+					</button>
+					{#if !pristine}
+						<button
+							type="button"
+							class="underline {confirmReset ? 'text-block' : 'text-ink-3 hover:text-ink'}"
+							onclick={startOver}
+						>
+							{confirmReset ? 'Clear everything?' : 'Start over'}
+						</button>
+					{/if}
+				</span>
 			{/if}
 		{/snippet}
 	</SectionHeader>

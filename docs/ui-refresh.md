@@ -568,6 +568,41 @@ Added 2026-09-05. Four small things from a review of the shipped generator.
   URL does not go on describing a design that has since been edited. Only a full page load
   reads it; a same-document hash change does not.
 
+## 8g. Saved designs by name
+
+Added 2026-09-05. §8f keeps one design, the one being worked on. This keeps any number.
+
+- **Where.** A "Save" link at the right end of the Content heading, beside "Start over", once
+  something is set; it reads "Saved (n)" once there is a list. Both open the same card,
+  `generator/SavedDesigns.svelte`, a centred modal `<dialog>` (`.modal` in `app.css`, the
+  picker's surface with a tinted backdrop) for the reason the colour picker is one: a press
+  outside closes it and reaches nothing underneath.
+- **What is saved.** The same record the autosave and the share link use (`Saved` from
+  `persist.ts`), the two pictures, a name, created and updated dates, the content type, and the
+  plain single-path SVG as a thumbnail. All of it sits in IndexedDB (`lib/generator/saved.ts`;
+  database version 2 adds `designs` and `designImages`, the pictures keyed `<id>/logo` and
+  `<id>/halftone` so listing reads only the small records). localStorage was considered for the
+  record alone and rejected: pictures would have had to stay out, and the point of saving a
+  Photo QR is the photo. Record and pictures go in one transaction, so a design is saved whole
+  or not at all; a refused write (quota, private mode) shows a notice in the card.
+- **Which one is open.** `stoneqr.opened` in localStorage remembers the saved design the working
+  one came from, with the record as it was then. The card compares that with the live snapshot:
+  the button reads "Saved", "Update" once something changed, or "Save" when nothing is open, and
+  "Save as a new design" forks. Opening another design replaces the working one, so it asks
+  first ("Replace your current design?") unless the work is saved as it stands or there is none.
+  Delete asks twice, like Start over. Rename is inline. Start over forgets which design is open.
+- **Files.** "Download file" writes `<name>.stoneqr.json`: `{stoneqr: 1, name, type, record,
+  logo?, halftone?}`, the pictures as data URLs. "Open a design file…" reads one back, saves it
+  as a new design, and opens it; a file that is not ours is refused with a notice, `apply`
+  validates every field of the record, and pictures must be `data:image/` URLs. This is the copy
+  that survives a cleared browser, Safari's seven-day storage expiry for sites that are not
+  installed, or a move to another device.
+- **Names.** `suggestName` offers one from what was typed: the host and path of a URL, the
+  network for WiFi, the person or company for a contact, the subject of an email, the summary of
+  an event, falling back to the content type. Names are one line of at most 120 characters.
+- **Tests.** `apps/site/test/saved.test.ts` pins the file format, the refusals, and the names.
+  IndexedDB itself is exercised in the browser, not in vitest.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

@@ -54,6 +54,10 @@ Accessibility moved because the muted text token was fixed the same day (`docs/l
 - Pin Fraunces optical size at 72 for the h1 alone (16 KB instead of 30) under a second family name, leaving the 18 to 72 face for h2 and h3 off the preload path. Saves 14 KB on the critical path for the cost of one more `@font-face`.
 - `font-display: optional` for the mono labels would keep the fallback for the whole page load when the font arrives late, avoiding a swap. Left as `swap` so the first visit looks like the second.
 
+## Offline and install
+
+The service worker, what it precaches, and how to test the site offline are in `docs/pwa.md`. It changes nothing on the first-visit critical path above: registration happens on the `load` event, after the paint, and the precache install runs in the background. Repeat visits and offline loads are served from the cache instead.
+
 ## Repeat the measurement
 
 ```bash

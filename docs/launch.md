@@ -19,7 +19,7 @@ Lighthouse on the live home page after the font work the same evening (`docs/per
 1. **Real-device scan matrix** (`docs/scan-matrix.md`). Print the test sheet, scan with three phones, fill the tables. This is also marketing content: "we scanned every export at every size on these phones" is a claim no competitor makes.
 2. **Phone checks from M10**: the pinned preview bar and the actual-size preview on a real phone.
 3. **Publish `@stoneqr/engine` to npm** (the last M7 item). The package currently points `main` at TypeScript source, which only works inside this workspace. Needs a `dist` build with `.d.ts` files and an exports map that keeps the site importing source in dev. One evening; a decision below.
-4. **Offline**: the manifest makes the site installable; a service worker would make it work with no connection, which is the natural end of "generated in your browser". Deferred because the deploy-cache incident showed how a stale asset can wedge a page; if built, precache only hashed assets and never `index.html`.
+4. **Offline**: built 2026-09-05, see `docs/pwa.md`. The worker precaches the bundle, fonts, icons, and every prerendered page, but stores only OK responses and fails the whole install on a 404, and pages are network-first, so the deploy-cache incident cannot repeat through it: a page that is stale is refreshed on the next online visit and a bad asset is never kept.
 5. **Renew** `security.txt` before 2027-09-01.
 
 ## Third-party services (need your accounts)

@@ -141,13 +141,25 @@ export function clearSaved(): void {
 
 export type ImageKey = 'logo' | 'halftone';
 const DB = 'stoneqr';
+/**
+ * Version 1 held `images`, the working design's two pictures. Version 2 adds the saved designs
+ * (`designs`, the named records, and `designImages`, their pictures keyed `<id>/logo` and
+ * `<id>/halftone`); see `saved.ts`. A store is only created when missing, so an upgrade from 1
+ * keeps the pictures that are already there.
+ */
+const DB_VERSION = 2;
 const STORE = 'images';
+export const STORES = { images: STORE, designs: 'designs', designImages: 'designImages' } as const;
+export type StoreName = (typeof STORES)[keyof typeof STORES];
 
-function openDb(): Promise<IDBDatabase> {
+export function openDb(): Promise<IDBDatabase> {
 	return new Promise((res, rej) => {
 		if (typeof indexedDB === 'undefined') return rej(new Error('no IndexedDB'));
-		const req = indexedDB.open(DB, 1);
-		req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+		const req = indexedDB.open(DB, DB_VERSION);
+		req.onupgradeneeded = () => {
+			const db = req.result;
+			for (const name of Object.values(STORES)) if (!db.objectStoreNames.contains(name)) db.createObjectStore(name);
+		};
 		req.onsuccess = () => res(req.result);
 		req.onerror = () => rej(req.error);
 		req.onblocked = () => rej(new Error('blocked'));

@@ -2,6 +2,7 @@
 	import { browser } from '$app/environment';
 	import { Design } from './state.svelte';
 	import { apply, readSaved, readImage, type ImageKey } from './persist';
+	import { readOpened, writeOpened } from './saved';
 
 	// One design per browser session. The landing pages (/wifi, /vcard, /event, /logo, /photo)
 	// mount this same component, so keeping the state here means a nav click only changes the
@@ -22,6 +23,8 @@
 	let imagesRestored = false;
 	/** What is in IndexedDB now, so a restore does not write the picture straight back. */
 	const stored: Record<ImageKey, string | undefined> = { logo: undefined, halftone: undefined };
+	/** The saved design the working one came from, read with it so a reload still knows. A module-level object so the dialog can bind to it. */
+	const session = $state({ opened: browser ? readOpened() : null });
 </script>
 
 <script lang="ts">
@@ -36,6 +39,7 @@
 	import StylePanel from './StylePanel.svelte';
 	import HalftonePanel from './HalftonePanel.svelte';
 	import ExportPanel from './ExportPanel.svelte';
+	import SavedDesigns from './SavedDesigns.svelte';
 
 	let {
 		preset = 'url',
@@ -145,7 +149,12 @@
 		design.halftoneImageName = '';
 		clearSaved();
 		void clearImages();
+		session.opened = null;
+		writeOpened(null);
 	}
+
+	let savedOpen = $state(false);
+	let savedCount = $state(0);
 
 	const inUse = $derived(design.advancedInUse);
 </script>
@@ -193,7 +202,7 @@
 >
 	<div class="contents lg:order-1 lg:block lg:space-y-6">
 		<div class="sheet order-1 p-5 lg:p-6">
-			<ContentForm {design} {pristine} onstartover={startOver} />
+			<ContentForm {design} {pristine} onstartover={startOver} {savedCount} onsaved={() => (savedOpen = true)} />
 		</div>
 		<div class="sheet order-3 p-5 lg:p-6">
 			<StylePanel {design} open={styleOpen} {advanced} />
@@ -209,3 +218,4 @@
 		<ExportPanel {design} {advanced} />
 	</div>
 </div>
+<SavedDesigns {design} {pristine} bind:open={savedOpen} bind:count={savedCount} bind:opened={session.opened} />

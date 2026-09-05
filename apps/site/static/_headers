@@ -11,6 +11,11 @@
 /fonts/*
   Cache-Control: public, max-age=31536000, immutable
 
+# The offline worker (src/service-worker.ts) is revalidated on every check so a deploy is noticed
+# on the next visit rather than after the browser's 24-hour default. deploy.sh warms it with the bundle.
+/service-worker.js
+  Cache-Control: no-cache
+
 # Icons and Open Graph cards change rarely and are fetched on every visit otherwise.
 /og/*
   Cache-Control: public, max-age=86400

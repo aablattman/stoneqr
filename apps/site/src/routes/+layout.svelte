@@ -1,8 +1,11 @@
 <script lang="ts">
 	import '../app.css';
+	import { onMount } from 'svelte';
+	import { dev } from '$app/environment';
 	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import Mark from '$lib/components/Mark.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 	import { NAV, SITE } from '$lib/site';
 	import { FONT_PRELOADS } from '$lib/fonts';
 
@@ -14,6 +17,55 @@
 	afterNavigate(({ type }) => {
 		if (type !== 'enter') document.documentElement.dataset.navigated = '';
 	});
+
+	/**
+	 * The service worker (src/service-worker.ts) is registered by SvelteKit's own init script. This
+	 * only watches it: a newer version that has finished installing waits behind the running one
+	 * until the visitor asks for it, so a page mid-edit is never swapped out underneath them; and
+	 * the first time a worker is active on this device, one notice says the app now works offline.
+	 * Both sit at the top of the page so they never share the bottom of a phone screen with
+	 * PreviewBar. Skipped in dev, where the worker has no build to cache.
+	 */
+	let waiting: ServiceWorker | null = $state(null);
+	let offlineReady = $state(false);
+	let reloading = false;
+
+	onMount(() => {
+		if (dev || !('serviceWorker' in navigator)) return;
+		const container = navigator.serviceWorker;
+		const controlled = () => container.controller !== null;
+		const track = (worker: ServiceWorker) => {
+			worker.addEventListener('statechange', () => {
+				if (worker.state === 'installed' && controlled()) waiting = worker;
+			});
+		};
+		void container.ready.then((registration) => {
+			if (registration.waiting && controlled()) waiting = registration.waiting;
+			if (registration.installing) track(registration.installing);
+			registration.addEventListener('updatefound', () => {
+				if (registration.installing) track(registration.installing);
+			});
+			try {
+				if (!localStorage.getItem('stoneqr.offlineNotice')) {
+					localStorage.setItem('stoneqr.offlineNotice', '1');
+					offlineReady = true;
+					setTimeout(() => (offlineReady = false), 8000);
+				}
+			} catch {
+				/* storage blocked: the notice just does not show */
+			}
+		});
+		// clients.claim() on a first install also fires this; only a requested update reloads.
+		container.addEventListener('controllerchange', () => {
+			if (reloading) location.reload();
+		});
+	});
+
+	function reloadForUpdate() {
+		if (!waiting) return;
+		reloading = true;
+		waiting.postMessage({ type: 'SKIP_WAITING' });
+	}
 </script>
 
 <svelte:head>
@@ -26,6 +78,30 @@
 <div class="flex min-h-dvh flex-col">
 	<!-- Invisible until it has focus: the first Tab press offers a way past the seven nav links. -->
 	<a href="#main" class="skip-link">Skip to content</a>
+	<div aria-live="polite">
+		{#if waiting}
+			<div class="border-b border-rule bg-accent-soft text-accent-ink">
+				<div class="notice notice-info mx-auto max-w-7xl border-l-0 bg-transparent px-4 py-2 sm:px-6">
+					<div class="row" style="grid-template-columns: minmax(0, 1fr) auto auto">
+						<span>A new version of StoneQR is ready.</span>
+						<button type="button" class="btn btn-sm btn-accent" onclick={reloadForUpdate}>Reload</button>
+						<button type="button" class="chip" onclick={() => (waiting = null)}>Later</button>
+					</div>
+				</div>
+			</div>
+		{:else if offlineReady}
+			<div class="border-b border-rule bg-accent-soft text-accent-ink">
+				<div class="notice notice-info mx-auto max-w-7xl border-l-0 bg-transparent px-4 py-2 sm:px-6">
+					<div class="row" style="grid-template-columns: minmax(0, 1fr) auto">
+						<span><strong class="font-medium">Available offline.</strong> StoneQR now works without a connection on this device.</span>
+						<button type="button" class="chip inline-flex items-center gap-1" onclick={() => (offlineReady = false)} aria-label="Dismiss">
+							<Icon name="close" size={12} />
+						</button>
+					</div>
+				</div>
+			</div>
+		{/if}
+	</div>
 	<header class="border-b border-rule bg-paper/80 backdrop-blur-sm">
 		<div class="mx-auto flex max-w-7xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
 			<a href="/" class="display flex items-center gap-2 text-xl text-ink no-underline" aria-label="StoneQR home">
