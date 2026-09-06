@@ -64,7 +64,7 @@ The frame sits outside the quiet zone; the print width is the code, the artwork 
 | F1 | 30 mm | ✅ | – | ✅ | – | 0.57 mm modules, so the dots are about 0.23 mm |
 | F2 | 50 mm | ✅ | – | ✅ | – | |
 
-Picture used: painted stand-in / real photo (delete one).
+Picture used on 2026-09-05: painted stand-in, printed in greyscale on a black-and-white laser. The Photo QR decode geometry does not depend on hue, but a colour print of a real photo is still owed.
 
 ## G. Silhouette: built-in WiFi shape, cut 50%
 
@@ -123,14 +123,14 @@ A ❌ here is data, not a bug. It tells us whether the warning copy is strong en
 
 | ID | What | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|---|
-| L1 | Grey ink `#7a7a7a` on white, contrast 4.3:1 (floor is 4:1) | 30 mm | ✅ | – | ✅ | – | |
-| L2 | Red ink `#a3301d` (the site warns about red-light scanners) | 30 mm | ✅ | – | ✅ | – | phone cameras should be fine; the warning is for laser scanners |
+| L1 | Grey ink `#7a7a7a` on white, contrast 4.3:1 (floor is 4:1) | 30 mm | ✅ | – | ✅ | – | a laser's grey is a dither of black dots, so this also tested a screened tint |
+| L2 | Red ink `#a3301d` (the site warns about red-light scanners) | 30 mm | ✅ | – | – | – | not yet tested: the 2026-09-05 print was a black-and-white laser, so the red came out as dark grey. Needs a colour print |
 | L3 | Tiny: 10 mm, 0.30 mm modules (floor is 0.4 mm) | 10 mm | ✅ | – | ✅ | – | |
 | L4 | Dense: long vCard, version 16, 0.34 mm modules | 30 mm | ✅ | – | ~ | – | the site calls this "tight"; Pixel 10 Pro needed 2 to 3 seconds, the only code that hesitated |
 | L5 | Dots preset at ECC L | 30 mm | ✅ | – | ✅ | – | |
 | L6 | Logo at 25% of the area, knockout off | 30 mm | ✅ | – | ✅ | – | the block threshold, with the logo painted straight over modules |
 | L7 | Photo, smallest dots 0.25, no fade | 30 mm | ✅ | – | ✅ | – | if the fallback ladder had to step in, the sheet's caption says so |
-| L8 | Gradient from near-black to a light teal `#5aa896` | 30 mm | ✅ | – | ✅ | – | the light end is about 2.6:1 against white |
+| L8 | Gradient from near-black to a light teal `#5aa896` | 30 mm | ✅ | – | ✅ (greyscale print) | – | the light end is about 2.6:1 against white. A greyscale print keeps the luminance, so the contrast part of the test holds; the colour itself is untested |
 | L9 | Quiet zone of 1 module | 30 mm | ✅ | – | ✅ | – | |
 | L10 | Inverted Dots preset (white dots on black) | 30 mm | ✅ (on the negative) | – | ✅ | – | |
 | L11 | Leaf preset (classy shapes) | 30 mm | ✅ | – | ✅ | – | |
@@ -154,4 +154,4 @@ Separate from the sheets: export one code in each format from the generator and 
 
 | Date | Printer | Paper | Phones | Sheet built | Notes |
 |---|---|---|---|---|---|
-| 2026-09-05 | – | plain | Pixel 10 Pro, default camera | 2026-09-05, painted stand-in photo | Nearly every code tried (a few skipped, not recorded which). Everything read instantly except L4, the dense vCard, which took 2 to 3 seconds. Every code read from 30% to 100% farther than the size copy promises, so the 10:1 rule in `maxScanDistanceM` is conservative on a current flagship; keep it until an older or cheaper Android is in the table. |
+| 2026-09-05 | black-and-white laser (greyscale) | plain | Pixel 10 Pro, default camera | 2026-09-05, painted stand-in photo | Nearly every code tried (a few skipped, not recorded which). Everything read instantly except L4, the dense vCard, which took 2 to 3 seconds. L2 does not count (red printed as grey) and L8 counts for contrast only. Every code read from 30% to 100% farther than the size copy promises, so the 10:1 rule in `maxScanDistanceM` is conservative on a current flagship; keep it until an older or cheaper Android is in the table. |
