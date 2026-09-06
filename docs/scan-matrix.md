@@ -18,20 +18,20 @@ Each table's IDs match the labels printed under the codes. The "software" column
 
 ## A. Plain black on white (ECC M, version 2 URL)
 
-| ID | Size | Modules | Software | iPhone (model, iOS) | Android (model, OS) | Google Lens | Notes |
+| ID | Size | Modules | Software | iPhone (model, iOS) | Android (Pixel 10 Pro, Android 16) | Google Lens | Notes |
 |---|---|---|---|---|---|---|---|
-| A1 | 15 mm | 0.45 mm | ✅ | – | – | – | below the site's 0.5 mm "good" floor |
-| A2 | 20 mm | 0.61 mm | ✅ | – | – | – | |
-| A3 | 30 mm | 0.91 mm | ✅ | – | – | – | |
-| A4 | 50 mm | 1.52 mm | ✅ | – | – | – | |
+| A1 | 15 mm | 0.45 mm | ✅ | – | ✅ | – | below the site's 0.5 mm "good" floor |
+| A2 | 20 mm | 0.61 mm | ✅ | – | ✅ | – | |
+| A3 | 30 mm | 0.91 mm | ✅ | – | ✅ | – | |
+| A4 | 50 mm | 1.52 mm | ✅ | – | ✅ | – | |
 
 ## B. Styled: the Rounded preset
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| B1 | 20 mm | ✅ | – | – | – | |
-| B2 | 30 mm | ✅ | – | – | – | |
-| B3 | 50 mm | ✅ | – | – | – | |
+| B1 | 20 mm | ✅ | – | ✅ | – | |
+| B2 | 30 mm | ✅ | – | ✅ | – | |
+| B3 | 50 mm | ✅ | – | ✅ | – | |
 
 ## C. Logo at 20% of the area, ECC H, knockout on
 
@@ -39,14 +39,14 @@ The largest logo the site allows without a warning (it warns above 20% and block
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| C1 | 30 mm | ✅ | – | – | – | |
-| C2 | 50 mm | ✅ | – | – | – | |
+| C1 | 30 mm | ✅ | – | ✅ | – | |
+| C2 | 50 mm | ✅ | – | ✅ | – | |
 
 ## D. Inverted (white on black)
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| D1 | 30 mm | ✅ (on the negative) | – | – | – | plan expects older Android to fail; note the OS version |
+| D1 | 30 mm | ✅ (on the negative) | – | ✅ | – | plan expects older Android to fail; note the OS version |
 
 ## E. Framed (call-to-action band, plain modules)
 
@@ -54,15 +54,15 @@ The frame sits outside the quiet zone; the print width is the code, the artwork 
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| E1 | 20 mm | ✅ | – | – | – | |
-| E2 | 30 mm | ✅ | – | – | – | |
+| E1 | 20 mm | ✅ | – | ✅ | – | |
+| E2 | 30 mm | ✅ | – | ✅ | – | |
 
 ## F. Photo QR, colour, dot size 0.4 (version 7)
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| F1 | 30 mm | ✅ | – | – | – | 0.57 mm modules, so the dots are about 0.23 mm |
-| F2 | 50 mm | ✅ | – | – | – | |
+| F1 | 30 mm | ✅ | – | ✅ | – | 0.57 mm modules, so the dots are about 0.23 mm |
+| F2 | 50 mm | ✅ | – | ✅ | – | |
 
 Picture used: painted stand-in / real photo (delete one).
 
@@ -72,8 +72,8 @@ A silhouette puts most of the dark modules inside solid ink regions, where only 
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| G1 | 30 mm | ✅ | – | – | – | light dots inside the ink arcs are the weak point |
-| G2 | 50 mm | ✅ | – | – | – | |
+| G1 | 30 mm | ✅ | – | ✅ | – | light dots inside the ink arcs are the weak point |
+| G2 | 50 mm | ✅ | – | ✅ | – | |
 
 ## H. Silhouette from a logo with a coloured background
 
@@ -81,14 +81,14 @@ The StoneQR mark, cut at 50%. An uploaded logo follows the same path.
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| H1 | 50 mm | ✅ | – | – | – | |
+| H1 | 50 mm | ✅ | – | ✅ | – | |
 
 ## I. Photo QR zoomed 2× and shifted 25% (busy crop)
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
-| I1 | 30 mm | ✅ | – | – | – | |
-| I2 | 50 mm | ✅ | – | – | – | |
+| I1 | 30 mm | ✅ | – | ✅ | – | |
+| I2 | 50 mm | ✅ | – | ✅ | – | |
 
 ## J. Content types (30 mm, plain)
 
@@ -96,15 +96,15 @@ Here the question is what the phone offers, not only whether it reads. Write the
 
 | ID | Type | Version | Software | iPhone | Android | Google Lens | What the phone offered |
 |---|---|---|---|---|---|---|---|
-| J1 | WiFi (WPA, hidden off) | 2 | ✅ | – | – | – | |
-| J2 | vCard 3.0 | 9 | ✅ | – | – | – | |
-| J3 | MeCard | 5 | ✅ | – | – | – | |
-| J4 | mailto with subject | 4 | ✅ | – | – | – | |
-| J5 | sms: with ?body= | 2 | ✅ | – | – | – | |
-| J6 | SMSTO: | 2 | ✅ | – | – | – | |
-| J7 | tel: | 2 | ✅ | – | – | – | |
-| J8 | geo: | 2 | ✅ | – | – | – | |
-| J9 | VEVENT | 12 | ✅ | – | – | – | 0.41 mm modules at 30 mm; record which phones offer "Add to calendar" |
+| J1 | WiFi (WPA, hidden off) | 2 | ✅ | – | ✅ | – | |
+| J2 | vCard 3.0 | 9 | ✅ | – | ✅ | – | |
+| J3 | MeCard | 5 | ✅ | – | ✅ | – | |
+| J4 | mailto with subject | 4 | ✅ | – | ✅ | – | |
+| J5 | sms: with ?body= | 2 | ✅ | – | ✅ | – | |
+| J6 | SMSTO: | 2 | ✅ | – | ✅ | – | |
+| J7 | tel: | 2 | ✅ | – | ✅ | – | |
+| J8 | geo: | 2 | ✅ | – | ✅ | – | |
+| J9 | VEVENT | 12 | ✅ | – | ✅ | – | 0.41 mm modules at 30 mm; record which phones offer "Add to calendar" |
 
 ## K. Basic size tiers (plain URL)
 
@@ -112,10 +112,10 @@ The four widths Basic offers. Scan each from the distance its card promises ("up
 
 | ID | Tier | Width | Promised distance | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|---|
-| K1 | Small | 25 mm | 25 cm (10 in) | – | – | – | a vCard at this width is flagged "too small" by the card on purpose |
-| K2 | Medium | 50 mm | 50 cm (20 in) | – | – | – | the default |
-| K3 | Large | 100 mm | 1 m (3 ft) | – | – | – | |
-| K4 | Extra large | 300 mm | 3 m (10 ft) | – | – | – | tiled over four Letter pages; trim and butt-join |
+| K1 | Small | 25 mm | 25 cm (10 in) | – | ✅ | – | a vCard at this width is flagged "too small" by the card on purpose |
+| K2 | Medium | 50 mm | 50 cm (20 in) | – | ✅ | – | the default |
+| K3 | Large | 100 mm | 1 m (3 ft) | – | ✅ | – | |
+| K4 | Extra large | 300 mm | 3 m (10 ft) | – | ✅ | – | tiled over four Letter pages; trim and butt-join |
 
 ## L. Stress: the risky things the site allows with a warning
 
@@ -123,18 +123,18 @@ A ❌ here is data, not a bug. It tells us whether the warning copy is strong en
 
 | ID | What | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|---|
-| L1 | Grey ink `#7a7a7a` on white, contrast 4.3:1 (floor is 4:1) | 30 mm | ✅ | – | – | – | |
-| L2 | Red ink `#a3301d` (the site warns about red-light scanners) | 30 mm | ✅ | – | – | – | phone cameras should be fine; the warning is for laser scanners |
-| L3 | Tiny: 10 mm, 0.30 mm modules (floor is 0.4 mm) | 10 mm | ✅ | – | – | – | |
-| L4 | Dense: long vCard, version 16, 0.34 mm modules | 30 mm | ✅ | – | – | – | the site calls this "tight" |
-| L5 | Dots preset at ECC L | 30 mm | ✅ | – | – | – | |
-| L6 | Logo at 25% of the area, knockout off | 30 mm | ✅ | – | – | – | the block threshold, with the logo painted straight over modules |
-| L7 | Photo, smallest dots 0.25, no fade | 30 mm | ✅ | – | – | – | if the fallback ladder had to step in, the sheet's caption says so |
-| L8 | Gradient from near-black to a light teal `#5aa896` | 30 mm | ✅ | – | – | – | the light end is about 2.6:1 against white |
-| L9 | Quiet zone of 1 module | 30 mm | ✅ | – | – | – | |
-| L10 | Inverted Dots preset (white dots on black) | 30 mm | ✅ (on the negative) | – | – | – | |
-| L11 | Leaf preset (classy shapes) | 30 mm | ✅ | – | – | – | |
-| L12 | Silhouette Heart, cut 25% (thin shape) | 30 mm | ✅ | – | – | – | |
+| L1 | Grey ink `#7a7a7a` on white, contrast 4.3:1 (floor is 4:1) | 30 mm | ✅ | – | ✅ | – | |
+| L2 | Red ink `#a3301d` (the site warns about red-light scanners) | 30 mm | ✅ | – | ✅ | – | phone cameras should be fine; the warning is for laser scanners |
+| L3 | Tiny: 10 mm, 0.30 mm modules (floor is 0.4 mm) | 10 mm | ✅ | – | ✅ | – | |
+| L4 | Dense: long vCard, version 16, 0.34 mm modules | 30 mm | ✅ | – | ~ | – | the site calls this "tight"; Pixel 10 Pro needed 2 to 3 seconds, the only code that hesitated |
+| L5 | Dots preset at ECC L | 30 mm | ✅ | – | ✅ | – | |
+| L6 | Logo at 25% of the area, knockout off | 30 mm | ✅ | – | ✅ | – | the block threshold, with the logo painted straight over modules |
+| L7 | Photo, smallest dots 0.25, no fade | 30 mm | ✅ | – | ✅ | – | if the fallback ladder had to step in, the sheet's caption says so |
+| L8 | Gradient from near-black to a light teal `#5aa896` | 30 mm | ✅ | – | ✅ | – | the light end is about 2.6:1 against white |
+| L9 | Quiet zone of 1 module | 30 mm | ✅ | – | ✅ | – | |
+| L10 | Inverted Dots preset (white dots on black) | 30 mm | ✅ (on the negative) | – | ✅ | – | |
+| L11 | Leaf preset (classy shapes) | 30 mm | ✅ | – | ✅ | – | |
+| L12 | Silhouette Heart, cut 25% (thin shape) | 30 mm | ✅ | – | ✅ | – | |
 
 ## File formats opened in
 
@@ -154,4 +154,4 @@ Separate from the sheets: export one code in each format from the generator and 
 
 | Date | Printer | Paper | Phones | Sheet built | Notes |
 |---|---|---|---|---|---|
-| – | – | – | – | – | |
+| 2026-09-05 | – | plain | Pixel 10 Pro, default camera | 2026-09-05, painted stand-in photo | Nearly every code tried (a few skipped, not recorded which). Everything read instantly except L4, the dense vCard, which took 2 to 3 seconds. Every code read from 30% to 100% farther than the size copy promises, so the 10:1 rule in `maxScanDistanceM` is conservative on a current flagship; keep it until an older or cheaper Android is in the table. |
