@@ -4,13 +4,26 @@
     {
       "name": "site",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "--cwd", "apps/site", "dev", "--port", "5173"],
-      "port": 5173
+      "runtimeArgs": [
+        "run",
+        "--cwd",
+        "apps/site",
+        "dev"
+      ],
+      "port": 5173,
+      "autoPort": true
     },
     {
       "name": "preview",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "--cwd", "apps/site", "preview", "--port", "4180"],
+      "runtimeArgs": [
+        "run",
+        "--cwd",
+        "apps/site",
+        "preview",
+        "--port",
+        "4180"
+      ],
       "port": 4180
     }
   ]
