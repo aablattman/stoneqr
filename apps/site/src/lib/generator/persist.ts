@@ -16,6 +16,9 @@
  * tested in Node.
  */
 import { type Design, type Fields, defaultFields } from './state.svelte';
+import type { Ecc, LengthUnit } from '@stoneqr/engine';
+import { PAYLOAD_TYPES, type PayloadType } from '@stoneqr/engine/payloads';
+import type { CornerDotStyle, CornerSquareStyle, DotStyle, GradientKind } from '$lib/styled';
 
 export const STORAGE_KEY = 'stoneqr.design';
 export const HASH_PREFIX = '#1.';
@@ -32,7 +35,7 @@ export const PERSISTED = [
 	'width', 'unit', 'scanDistanceM', 'dpi',
 	'fg', 'bg', 'cornerColor', 'transparentBg', 'dot', 'cornerSquare', 'cornerDot',
 	'gradient', 'gradientTo', 'gradientAngleDeg',
-	'logoName', 'logoSize', 'logoKnockout', 'logoMargin',
+	'logoName', 'logoWidth', 'logoAspect', 'logoKnockout', 'logoMargin',
 	'frameEnabled', 'frameText', 'frameColor', 'frameTextColor',
 	'halftone', 'halftoneImageName', 'halftoneDotScale', 'halftoneDim', 'halftoneGrayscale',
 	'halftoneContrast', 'halftoneSilhouette', 'halftoneThreshold', 'halftoneZoom', 'halftoneOffsetX', 'halftoneOffsetY',
@@ -97,14 +100,44 @@ export function apply(design: Design, saved: unknown): boolean {
 	return true;
 }
 
-/** Nullable keys accept null; everything else must match the current value's type. */
+/**
+ * The keys that take one of a fixed set of words. Each set is a Record keyed by the type, so
+ * adding a value to a union without adding it here is a type error rather than a silent drop.
+ * A word outside its set is refused: `buildPayload` and the styled renderer switch on these, and
+ * a share link is one edit away from a value nothing switches on.
+ */
+const keys = <T extends string>(r: Record<T, true>): ReadonlySet<string> => new Set(Object.keys(r));
+const ALLOWED: Partial<Record<PersistedKey, ReadonlySet<string>>> = {
+	type: new Set(PAYLOAD_TYPES.map((t): PayloadType => t.id)),
+	eccChoice: keys<Ecc>({ L: true, M: true, Q: true, H: true }),
+	unit: keys<LengthUnit>({ mm: true, cm: true, in: true }),
+	dot: keys<DotStyle>({ square: true, rounded: true, dots: true, classy: true, 'extra-rounded': true }),
+	cornerSquare: keys<CornerSquareStyle>({ square: true, 'extra-rounded': true, dot: true, classy: true }),
+	cornerDot: keys<CornerDotStyle>({ square: true, dot: true, classy: true }),
+	gradient: keys<GradientKind>({ none: true, linear: true, radial: true })
+};
+
+/** The keys that hold a colour. The pickers always write `#rrggbb`; a short form is let through, anything else is not a colour. */
+const COLOUR_KEYS: ReadonlySet<PersistedKey> = new Set(['fg', 'bg', 'cornerColor', 'gradientTo', 'frameColor', 'frameTextColor']);
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+/** The keys whose default is null, and the type they take when set. */
+const NULLABLE: Partial<Record<PersistedKey, 'number' | 'string'>> = { scanDistanceM: 'number', cornerColor: 'string', shortUrl: 'string' };
+
+/**
+ * Nullable keys accept null; enumerated keys must be one of their words; colours must be hex;
+ * everything else must match the current value's type. The finite and length limits apply
+ * whatever the current value is, so a field that happens to be null cannot take a megabyte.
+ */
 function accepts(k: PersistedKey, current: unknown, v: unknown): boolean {
-	if (v === null) return k === 'scanDistanceM' || k === 'cornerColor' || k === 'shortUrl';
+	if (v === null) return k in NULLABLE;
+	const allowed = ALLOWED[k];
+	if (allowed) return typeof v === 'string' && allowed.has(v);
 	if (k === 'mask') return v === 'auto' || (typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= 7);
-	if (current === null) return k === 'scanDistanceM' ? typeof v === 'number' : typeof v === 'string';
-	if (typeof v !== typeof current) return false;
+	const expected = current === null ? NULLABLE[k] : typeof current;
+	if (typeof v !== expected) return false;
 	if (typeof v === 'number' && !Number.isFinite(v)) return false;
 	if (typeof v === 'string' && v.length > 20000) return false;
+	if (COLOUR_KEYS.has(k)) return typeof v === 'string' && HEX.test(v);
 	return true;
 }
 
@@ -121,11 +154,13 @@ export function readSaved(): Saved | null {
 	}
 }
 
-export function writeSaved(saved: Saved): void {
+/** False when the browser refused (private mode, storage disabled, or full), so the page can say the design is not being kept. */
+export function writeSaved(saved: Saved): boolean {
 	try {
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+		return true;
 	} catch {
-		/* private mode, storage disabled, or full: the design just does not persist */
+		return false;
 	}
 }
 
@@ -177,19 +212,21 @@ function tx<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequ
 					req.onerror = () => rej(req.error);
 					t.oncomplete = () => db.close();
 				})
-		)
-		.catch(() => undefined);
+		);
 }
 
+/** A missing or unreadable store reads as no picture. */
 export async function readImage(key: ImageKey): Promise<string | undefined> {
-	const v = await tx<unknown>('readonly', (s) => s.get(key));
+	const v = await tx<unknown>('readonly', (s) => s.get(key)).catch(() => undefined);
 	return typeof v === 'string' ? v : undefined;
 }
+/** Rejects when the browser refuses the write (a full store, or no IndexedDB), so the caller can say so. */
 export function writeImage(key: ImageKey, dataUrl: string | undefined): Promise<unknown> {
 	return dataUrl ? tx('readwrite', (s) => s.put(dataUrl, key)) : tx('readwrite', (s) => s.delete(key));
 }
+/** Best effort: there is nothing to say if a clear fails. */
 export function clearImages(): Promise<unknown> {
-	return tx('readwrite', (s) => s.clear());
+	return tx('readwrite', (s) => s.clear()).catch(() => undefined);
 }
 
 // ---- share links ------------------------------------------------------------------------------

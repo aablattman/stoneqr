@@ -41,6 +41,7 @@ if (!bundle.success) {
 const pageJs = await bundle.outputs[0].text();
 
 let finish;
+let problems = 0;
 const done = new Promise((r) => (finish = r));
 const file = (path, type) => new Response(readFileSync(path), { headers: { 'content-type': type } });
 
@@ -50,7 +51,15 @@ const server = Bun.serve({
 		const url = new URL(request.url);
 		if (url.pathname === '/') return file(resolve(here, 'page.html'), 'text/html; charset=utf-8');
 		if (url.pathname === '/page.js') return new Response(pageJs, { headers: { 'content-type': 'text/javascript' } });
+		if (url.pathname === '/scan-matrix.md') return file(resolve(root, 'docs/scan-matrix.md'), 'text/plain; charset=utf-8');
 		if (url.pathname === '/favicon.svg') return file(resolve(root, 'apps/site/static/favicon.svg'), 'image/svg+xml');
+		// The SVG-logo rows use the same fixtures `bun run logo-fixtures` checks, so the sheet and
+		// the test are drawing the same files.
+		if (url.pathname.startsWith('/logo-fixture/')) {
+			const name = decodeURIComponent(url.pathname.slice('/logo-fixture/'.length));
+			if (!/^[a-z0-9-]+\.svg$/i.test(name)) return new Response('not found', { status: 404 });
+			return file(resolve(root, 'apps/site/test/fixtures/logos', name), 'image/svg+xml');
+		}
 		if (url.pathname === '/photo') {
 			if (!photoPath) return new Response('no photo given', { status: 404 });
 			return file(photoPath, PHOTO_TYPES[extname(photoPath).toLowerCase()] ?? 'application/octet-stream');
@@ -59,6 +68,8 @@ const server = Bun.serve({
 			const bytes = new Uint8Array(await request.arrayBuffer());
 			writeFileSync(out, bytes);
 			console.log(`  ${(bytes.length / 1024).toFixed(0)} KB  docs/scan-sheets.pdf`);
+			problems =
+				Number(request.headers.get('x-decode-failures') ?? 0) + Number(request.headers.get('x-matrix-drift') ?? 0);
 			finish();
 			return new Response('ok');
 		}
@@ -73,4 +84,8 @@ const server = Bun.serve({
 console.log(`Open http://localhost:${PORT}/ to build docs/scan-sheets.pdf${photoPath ? ` (photo: ${photoPath})` : ' (synthetic photo; pass --photo <file> for a real one)'}`);
 await done;
 server.stop(true);
+if (problems) {
+	console.error(`Done, but ${problems} thing${problems === 1 ? '' : 's'} above need attention.`);
+	process.exit(1);
+}
 console.log('Done.');

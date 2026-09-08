@@ -1,5 +1,6 @@
 import { PDFDocument, StandardFonts, cmyk, rgb, type Color, type PDFFont, type PDFPage } from 'pdf-lib';
 import { matrixToPath } from './render/svg.js';
+import { isTransparent, parseRgb } from './export/png.js';
 import type { EncodedQr } from './types.js';
 
 /** Points per millimetre. PDF user space is 1/72 inch. */
@@ -162,6 +163,10 @@ export interface LayoutOptions {
 	fontSizePt?: number;
 	/** Print black as CMYK 100% K rather than RGB black. Default true. */
 	cmyk?: boolean;
+	/** The code's dark colour, hex. Default black. Captions stay black, since a pale ink would make them unreadable before it made the code so. */
+	fg?: string;
+	/** A fill behind the code square, hex. White or 'transparent' (the default) draws nothing, since label stock is white. */
+	bg?: string;
 	/** 0-based label position to start at, so a part-used sheet can be reused. Default 0. */
 	startAt?: number;
 	/** Draw faint 0.2 pt label outlines, for a calibration print. Default false. */
@@ -184,7 +189,7 @@ export async function layoutLabels(
 	const quiet = Math.max(0, opts.quietZone ?? 4);
 	const wantsCaption = (opts.caption ?? 'label') !== 'none';
 	const fontSize = opts.fontSizePt ?? 8;
-	const ink: Color = (opts.cmyk ?? true) ? cmyk(0, 0, 0, 1) : rgb(0, 0, 0);
+	const { ink, fill, caption: captionInk } = labelColours(opts);
 
 	const doc = await PDFDocument.create();
 	doc.setTitle('StoneQR labels');
@@ -225,6 +230,15 @@ export async function layoutLabels(
 		const codeLeftMm = leftMm + PAD_MM;
 		const codeTopMm = topMm + (sheet.labelHeightMm - codeMm) / 2;
 		const modules = item.qr.size + 2 * quiet;
+		if (fill) {
+			page.drawRectangle({
+				x: mmToPt(codeLeftMm),
+				y: pageHeightPt - mmToPt(codeTopMm + codeMm),
+				width: mmToPt(codeMm),
+				height: mmToPt(codeMm),
+				color: fill
+			});
+		}
 		page.drawSvgPath(matrixToPath(item.qr.matrix, quiet), {
 			x: mmToPt(codeLeftMm),
 			y: pageHeightPt - mmToPt(codeTopMm),
@@ -242,11 +256,28 @@ export async function layoutLabels(
 			y: pageHeightPt - mmToPt(topMm + sheet.labelHeightMm / 2) - fontSize * 0.35,
 			size: fontSize,
 			font,
-			color: ink
+			color: captionInk
 		});
 	}
 
 	return doc.save();
+}
+
+/**
+ * The colours a label run prints in. Black stays 100% K when `cmyk` is on, as the plain PDF does;
+ * any other ink is RGB. White or transparent backgrounds draw no fill.
+ */
+export function labelColours(opts: Pick<LayoutOptions, 'cmyk' | 'fg' | 'bg'>): { ink: Color; fill: Color | undefined; caption: Color } {
+	const useCmyk = opts.cmyk ?? true;
+	const black: Color = useCmyk ? cmyk(0, 0, 0, 1) : rgb(0, 0, 0);
+	const [r, g, b] = parseRgb(opts.fg, [0, 0, 0]);
+	const ink = useCmyk && r <= 32 && g <= 32 && b <= 32 ? black : rgb(r / 255, g / 255, b / 255);
+	let fill: Color | undefined;
+	if (opts.bg && !isTransparent(opts.bg)) {
+		const [br, bgc, bb] = parseRgb(opts.bg, [255, 255, 255]);
+		if (!(br === 255 && bgc === 255 && bb === 255)) fill = rgb(br / 255, bgc / 255, bb / 255);
+	}
+	return { ink, fill, caption: black };
 }
 
 /**

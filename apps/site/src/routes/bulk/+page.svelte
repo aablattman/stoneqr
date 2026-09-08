@@ -119,12 +119,14 @@
 		elapsed = 0;
 	}
 
-	// Anything that changes what gets encoded invalidates the run. Size, colours and resolution
-	// are applied when a file is written, so they do not.
+	// Anything that changes what gets encoded, or the colours it is decode-tested in, invalidates
+	// the run. Size and resolution are applied when a file is written, so they do not.
 	$effect(() => {
 		parsed.rows;
 		type;
 		ecc;
+		fg;
+		bg;
 		clearResults();
 	});
 
@@ -137,7 +139,7 @@
 		const started = performance.now();
 		try {
 			const rows: BulkRow[] = parsed.rows.map((row) => ({ payload: row.payload, label: row.label }));
-			const result = await runner.generate(rows, { type, ecc }, (n) => (done = n));
+			const result = await runner.generate(rows, { type, ecc, fg, bg }, (n) => (done = n));
 			items = result.items;
 			bits = result.bits;
 			elapsed = performance.now() - started;
@@ -243,7 +245,8 @@
 					payload: item.payload
 				});
 			}
-			const pdf = await mod.layoutLabels(list, sheetId, { quietZone, caption, outlines, startAt });
+			// The same colours and width as the ZIP; the engine holds the width to what the label allows.
+			const pdf = await mod.layoutLabels(list, sheetId, { quietZone, caption, outlines, startAt, fg, bg, codeSizeMm: widthMm });
 			downloadBytes(pdf, `stoneqr-labels-${sheetId}.pdf`, 'application/pdf');
 		} catch (e) {
 			runError = e instanceof Error ? e.message : String(e);
@@ -547,7 +550,8 @@
 						{unverified.length === 1 ? 'code' : 'codes'} did not decode on this device:
 						{unverified.length === 1 ? 'row' : 'rows'}
 						<span class="num">{rowNumbers(unverified)}</span>. They are still in the ZIP, marked
-						<code>false</code> in the manifest. Scan them by hand before printing.</span>
+						<code>false</code> in the manifest. The check uses the ink and paper colours above, so
+						more contrast between them is the first thing to try; then scan them by hand before printing.</span>
 					</p>
 				{/if}
 				{#if rejected.length > 0}
@@ -687,9 +691,10 @@
 		<h3>Label sheets</h3>
 		<p>
 			Four sheets are laid out from measured geometry: Avery 5160 address labels, 5163 shipping
-			labels, and 5395 name badges on US Letter, plus Avery L7160 on A4. Each code is placed with a
-			2 mm margin inside its die-cut, with the caption beside it, and you can start partway down a
-			part-used sheet. Print the calibration sheet first: it draws the label outlines and nothing
+			labels, and 5395 name badges on US Letter, plus Avery L7160 on A4. Each code is printed in the
+			colours and at the width set above, or as large as the label allows, with a 2 mm margin
+			inside its die-cut and the caption beside it, and you can start partway down a part-used
+			sheet. Print the calibration sheet first: it draws the label outlines and nothing
 			else, so you can hold it up to a real sheet and catch a printer that scales to fit before you
 			have wasted a pack of labels.
 		</p>

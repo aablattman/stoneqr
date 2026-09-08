@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PERSISTED, snapshot, compact, apply, encodeHash, decodeHash, isDesignHash, type Saved } from '$lib/generator/persist';
-import { defaultFields, type Design } from '$lib/generator/state.svelte';
+import { buildPayload, defaultFields, type Design } from '$lib/generator/state.svelte';
 
 /** A plain stand-in for Design with the persisted fields at their defaults. */
 function fake(): Design {
@@ -10,7 +10,7 @@ function fake(): Design {
 		fg: '#000000', bg: '#ffffff', cornerColor: null, transparentBg: false,
 		dot: 'square', cornerSquare: 'square', cornerDot: 'square',
 		gradient: 'none', gradientTo: '#1f6f63', gradientAngleDeg: 45,
-		logoName: '', logoSize: 0.35, logoKnockout: true, logoMargin: 1,
+		logoName: '', logoWidth: 0.2, logoAspect: 1, logoKnockout: true, logoMargin: 1,
 		frameEnabled: false, frameText: 'Scan me', frameColor: '#000000', frameTextColor: '#ffffff',
 		halftone: false, halftoneImageName: '', halftoneDotScale: 0.4, halftoneDim: 0, halftoneGrayscale: false,
 		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,
@@ -59,6 +59,56 @@ describe('persist', () => {
 		expect(b.fields.wifi.ssid).toBe('');
 		expect(b.fields.wifi.hidden).toBe(false);
 		expect('nonsense' in b).toBe(false);
+	});
+
+	it('refuses a word outside an enumerated field, and keeps one inside it', () => {
+		const b = fake();
+		const bad = { v: 1, type: 'bogus', eccChoice: 'X', unit: 'furlong', dot: 'hexagon', cornerSquare: 'star', cornerDot: 'heart', gradient: 'conic' } as unknown as Saved;
+		expect(apply(b, bad)).toBe(true);
+		expect(b.type).toBe('url');
+		expect(b.eccChoice).toBe('M');
+		expect(b.unit).toBe('mm');
+		expect(b.dot).toBe('square');
+		expect(b.cornerSquare).toBe('square');
+		expect(b.cornerDot).toBe('square');
+		expect(b.gradient).toBe('none');
+		const good = { v: 1, type: 'event', eccChoice: 'H', unit: 'in', dot: 'classy', cornerSquare: 'dot', cornerDot: 'classy', gradient: 'radial' } as Saved;
+		expect(apply(b, good)).toBe(true);
+		expect(b.type).toBe('event');
+		expect(b.eccChoice).toBe('H');
+		expect(b.unit).toBe('in');
+		expect(b.dot).toBe('classy');
+		expect(b.cornerSquare).toBe('dot');
+		expect(b.cornerDot).toBe('classy');
+		expect(b.gradient).toBe('radial');
+	});
+
+	it('holds null-default fields to the same limits and colours to hex', () => {
+		const b = fake();
+		const bad = { v: 1, cornerColor: 'x'.repeat(30000), shortUrl: 'y'.repeat(30000), scanDistanceM: Infinity, fg: 'red', bg: '#12345', gradientTo: 'url(#x)' } as unknown as Saved;
+		expect(apply(b, bad)).toBe(true);
+		expect(b.cornerColor).toBeNull();
+		expect(b.shortUrl).toBeNull();
+		expect(b.scanDistanceM).toBeNull();
+		expect(b.fg).toBe('#000000');
+		expect(b.bg).toBe('#ffffff');
+		expect(b.gradientTo).toBe('#1f6f63');
+		const good = { v: 1, cornerColor: '#ABC', shortUrl: 'https://s.example/x', scanDistanceM: 2.5, fg: '#123456', frameColor: '#fff' } as Saved;
+		expect(apply(b, good)).toBe(true);
+		expect(b.cornerColor).toBe('#ABC');
+		expect(b.shortUrl).toBe('https://s.example/x');
+		expect(b.scanDistanceM).toBe(2.5);
+		expect(b.fg).toBe('#123456');
+		expect(b.frameColor).toBe('#fff');
+		// And back to null, which is how the pickers say "follow the code colour".
+		expect(apply(b, { v: 1, cornerColor: null } as Saved)).toBe(true);
+		expect(b.cornerColor).toBeNull();
+	});
+
+	it('gives an unknown payload type an empty result rather than none', () => {
+		// The second fence behind `apply`: a design must never be left without a payload result.
+		const r = buildPayload('bogus' as never, defaultFields(), null);
+		expect(r).toEqual({ payload: '', error: null, warnings: [], empty: true });
 	});
 
 	it('rejects records that are not ours', () => {

@@ -42,6 +42,12 @@ export interface BulkRow {
 export interface EncodeOptions {
 	type: BulkPayloadType;
 	ecc: Ecc;
+	/**
+	 * The colours the files will be written in, hex. The decode check rasterises in them, so a
+	 * pair a phone cannot tell apart fails the check rather than passing as black on white.
+	 */
+	fg: string;
+	bg: string;
 }
 
 export interface RenderOptions {

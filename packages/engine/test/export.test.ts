@@ -225,6 +225,22 @@ describe('exportPng', () => {
 });
 
 describe('exportEps', () => {
+	it('writes a transparent background when asked, and the file still decodes', () => {
+		const qr = encode(PAYLOAD);
+		const { png, pxPerModule } = exportPng(qr, { widthMm: 30, bg: 'transparent' });
+		const px = decodePng(png);
+		const at = (x: number, y: number) => Array.from(px.data.subarray((y * px.width + x) * 4, (y * px.width + x) * 4 + 4));
+		// The quiet zone is light: white underneath, fully transparent on top.
+		expect(at(0, 0)).toEqual([255, 255, 255, 0]);
+		// The top-left finder pattern starts four modules in and is dark and opaque.
+		const finder = 4 * pxPerModule + 1;
+		expect(at(finder, finder)).toEqual([0, 0, 0, 255]);
+		expect(verifyRaster(px, PAYLOAD)).toEqual({ ok: true, decoded: PAYLOAD });
+		// Opaque by default: the same pixel carries the light colour with full alpha.
+		const opaque = decodePng(exportPng(qr, { widthMm: 30 }).png);
+		expect(Array.from(opaque.data.subarray(0, 4))).toEqual([255, 255, 255, 255]);
+	});
+
 	it('emits a well-formed EPS with one rectfill per merged run', () => {
 		const qr = encode(PAYLOAD);
 		const eps = exportEps(qr, { widthMm: 30, title: 'Print size guide' });

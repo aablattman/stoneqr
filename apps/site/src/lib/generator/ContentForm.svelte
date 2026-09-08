@@ -32,11 +32,13 @@
 	const contactTypes: PayloadType[] = ['vcard', 'mecard'];
 
 	/**
-	 * Ten types in five columns, so the grid comes out exactly two full rows. "Calendar event" is
-	 * shortened for the tile because it is twice the width of any other label; the full wording
-	 * stays on the tile's accessible name and in the description line under the grid.
+	 * Ten types in five columns, so the grid comes out exactly two full rows. Between lg and xl
+	 * the column is 18rem and a tile has room for six mono characters, so "Calendar event" and
+	 * "Location" are shortened for the tile; the full wording stays on the tile's accessible name
+	 * and in the description line under the grid. A label that outgrows its tile is clipped with
+	 * an ellipsis by `.type-name`, so check new words in a 1100 px window.
 	 */
-	const SHORT: Partial<Record<PayloadType, string>> = { event: 'Event' };
+	const SHORT: Partial<Record<PayloadType, string>> = { event: 'Event', geo: 'Place' };
 </script>
 
 <section class="grid gap-5" aria-labelledby="content-heading">

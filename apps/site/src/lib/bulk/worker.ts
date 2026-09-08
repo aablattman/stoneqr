@@ -14,6 +14,7 @@
 import { encode, exportPng, rasterize, renderSvg, verifyRaster, type EncodedQr } from '@stoneqr/engine';
 import { zipSync, type Zippable } from 'fflate';
 import { slug } from '$lib/download';
+import { hexToRgb, normaliseHex } from '$lib/colour';
 import {
 	VERIFY_PX,
 	csvCell,
@@ -51,13 +52,25 @@ function reason(e: unknown): string {
 	return e instanceof Error ? e.message : String(e);
 }
 
+type Rgb = [number, number, number];
+
+/** The colours the ZIP will use, or the defaults where a hex field is mid-edit, as `exportPng` falls back. */
+function colours(opts: EncodeOptions): { fg: Rgb; bg: Rgb } {
+	return {
+		fg: normaliseHex(opts.fg) ? hexToRgb(opts.fg) : [0, 0, 0],
+		bg: normaliseHex(opts.bg) ? hexToRgb(opts.bg) : [255, 255, 255]
+	};
+}
+
 /**
- * Rasterise and decode. The check always uses a 4-module quiet zone because it is testing the
- * symbol, not the page layout; the printed quiet zone is a separate setting with its own warning.
+ * Rasterise and decode, in the colours the files will be written in, so "verified" in the
+ * manifest means the code as delivered and not a black-on-white stand-in. The check always uses
+ * a 4-module quiet zone because it is testing the symbol, not the page layout; the printed quiet
+ * zone is a separate setting with its own warning.
  */
-function decodes(qr: Pick<EncodedQr, 'matrix' | 'size'>, payload: string): boolean {
+function decodes(qr: Pick<EncodedQr, 'matrix' | 'size'>, payload: string, ink: { fg: Rgb; bg: Rgb }): boolean {
 	try {
-		return verifyRaster(rasterize(qr, { pxPerModule: VERIFY_PX, quietZone: 4 }), payload).ok;
+		return verifyRaster(rasterize(qr, { pxPerModule: VERIFY_PX, quietZone: 4, fg: ink.fg, bg: ink.bg }), payload).ok;
 	} catch {
 		return false;
 	}
@@ -80,8 +93,9 @@ interface Attempt {
  * mask is a genuine failure and is reported as one.
  */
 function encodeVerified(payload: string, opts: EncodeOptions): Attempt {
+	const ink = colours(opts);
 	const encoded = encode(payload, { ecc: opts.ecc });
-	if (decodes(encoded, payload)) return { encoded, verified: true, remasked: false };
+	if (decodes(encoded, payload, ink)) return { encoded, verified: true, remasked: false };
 	for (let mask = 0; mask < 8; mask++) {
 		if (mask === encoded.mask) continue;
 		let alt: EncodedQr;
@@ -90,7 +104,7 @@ function encodeVerified(payload: string, opts: EncodeOptions): Attempt {
 		} catch {
 			continue;
 		}
-		if (decodes(alt, payload)) return { encoded: alt, verified: true, remasked: true };
+		if (decodes(alt, payload, ink)) return { encoded: alt, verified: true, remasked: true };
 	}
 	return { encoded, verified: false, remasked: false };
 }

@@ -182,22 +182,25 @@ describe('assess', () => {
 		expect(find(transparent, 'inverted')).toHaveLength(0);
 	});
 
-	it('warns then blocks as the logo grows, and asks for ECC H', () => {
-		const ok = assess({ widthMm: 30, size: 29, logoAreaRatio: 0.15, ecc: 'H' });
+	it('warns then blocks as the logo hides more of the code, and asks for ECC H', () => {
+		const ok = assess({ widthMm: 30, size: 29, logoCover: 0.09, ecc: 'H' });
 		expect(find(ok, 'logo-size')).toHaveLength(0);
 		expect(find(ok, 'logo-ecc')).toHaveLength(0);
 
-		const big = assess({ widthMm: 30, size: 29, logoAreaRatio: 0.22, ecc: 'H' });
+		// Exactly at a threshold is still allowed; the rule is "above".
+		expect(find(assess({ widthMm: 30, size: 29, logoCover: 0.15, ecc: 'H' }), 'logo-size')).toHaveLength(0);
+
+		const big = assess({ widthMm: 30, size: 29, logoCover: 0.17, ecc: 'H' });
 		const bigWarning = find(big, 'logo-size')[0]!;
 		expect(bigWarning.level).toBe('warn');
-		expect(bigWarning.message).toContain('22%');
+		expect(bigWarning.message).toContain('17%');
 
-		const huge = assess({ widthMm: 30, size: 29, logoAreaRatio: 0.3, ecc: 'H' });
+		const huge = assess({ widthMm: 30, size: 29, logoCover: 0.24, ecc: 'H' });
 		const hugeWarning = find(huge, 'logo-size')[0]!;
 		expect(hugeWarning.level).toBe('block');
-		expect(hugeWarning.message).toContain('30%');
+		expect(hugeWarning.message).toContain('24%');
 
-		const lowEcc = assess({ widthMm: 30, size: 29, logoAreaRatio: 0.1, ecc: 'M' });
+		const lowEcc = assess({ widthMm: 30, size: 29, logoCover: 0.05, ecc: 'M' });
 		expect(find(lowEcc, 'logo-ecc')[0]!.level).toBe('warn');
 		expect(find(lowEcc, 'logo-ecc')[0]!.message).toContain('error correction is M');
 
@@ -212,7 +215,7 @@ describe('assess', () => {
 			quiet: 0,
 			fg: '#ff0000',
 			bg: '#ffffff',
-			logoAreaRatio: 0.4,
+			logoCover: 0.4,
 			ecc: 'L'
 		});
 		const levels = warnings.map((w) => w.level);

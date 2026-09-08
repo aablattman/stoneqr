@@ -108,9 +108,15 @@
 			if (saved && apply(design, saved)) {
 				design.logo = undefined;
 				design.logoName = '';
+				design.logoAspect = 1;
 				design.halftoneImage = undefined;
 				design.halftoneImageName = '';
+				design.halftone = false;
 				history.replaceState(null, '', location.pathname + location.search);
+				// The pictures saved here were never on the design, so `keepImage` sees nothing to
+				// write; delete them outright, or the next plain load would attach them to it.
+				// Best effort: a store that cannot be written could not have handed the pictures back either.
+				await Promise.all([writeImage('logo', undefined), writeImage('halftone', undefined)]).catch(() => undefined);
 				return;
 			}
 		}
@@ -125,15 +131,34 @@
 	// short wait folds a slider drag into one write.
 	$effect(() => {
 		const s = snapshot(design);
-		const t = setTimeout(() => writeSaved(s), 300);
+		const t = setTimeout(() => {
+			storageNote = writeSaved(s)
+				? ''
+				: 'This browser is not keeping your design as you work: its storage is full or switched off. Download a design file from Saved to keep it.';
+		}, 300);
 		return () => clearTimeout(t);
 	});
 	$effect(() => keepImage('logo', design.logo));
 	$effect(() => keepImage('halftone', design.halftoneImage));
+	/**
+	 * Why the design is not being kept, shown above the tool. A picture the browser refused
+	 * used to vanish without a word: the settings came back after a reload and the picture did not.
+	 */
+	let storageNote = $state('');
 	function keepImage(key: ImageKey, dataUrl: string | undefined) {
 		if (stored[key] === dataUrl) return;
 		stored[key] = dataUrl;
-		void writeImage(key, dataUrl);
+		writeImage(key, dataUrl).then(
+			() => {
+				if (dataUrl) storageNote = '';
+			},
+			(e: unknown) => {
+				if (!dataUrl) return;
+				const what = key === 'logo' ? 'the logo' : 'the Photo QR picture';
+				const full = /quota/i.test(e instanceof Error ? e.message + e.name : String(e));
+				storageNote = `This browser could not keep ${what} for next time${full ? ': its storage is full' : ''}. Everything else is saved as you work; download a design file from Saved to keep the picture.`;
+			}
+		);
 	}
 
 	/** Nothing set and nothing typed: the "Start over" control has nothing to do and stays hidden. */
@@ -174,6 +199,12 @@
 			</div>
 		</div>
 	</div>
+	{#if storageNote}
+		<p class="notice notice-warn mt-3 max-w-none" role="status">
+			<Icon name="warning" size={15} />
+			<span>{storageNote}</span>
+		</p>
+	{/if}
 	{#if !advanced && inUse.length}
 		<p class="notice notice-info mt-3 max-w-none">
 			<Icon name="warning" size={15} />

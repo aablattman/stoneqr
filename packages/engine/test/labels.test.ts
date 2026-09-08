@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, cmyk, rgb } from 'pdf-lib';
 import { encode } from '../src/encode.js';
 import {
 	calibrationSheet,
+	labelColours,
 	labelsPerSheet,
 	layoutLabels,
 	sheets,
@@ -79,6 +80,23 @@ describe('counting helpers', () => {
 		expect(sheetsNeeded(35, '5160', 25)).toBe(2);
 		expect(sheetsNeeded(6, '5160', 25)).toBe(2);
 	});
+	it('prints the chosen colours, keeping black as 100% K and captions black', () => {
+		expect(labelColours({})).toEqual({ ink: cmyk(0, 0, 0, 1), fill: undefined, caption: cmyk(0, 0, 0, 1) });
+		expect(labelColours({ cmyk: false })).toEqual({ ink: rgb(0, 0, 0), fill: undefined, caption: rgb(0, 0, 0) });
+		const red = labelColours({ fg: '#ff0000', bg: '#ffffff' });
+		expect(red.ink).toEqual(rgb(1, 0, 0));
+		expect(red.fill).toBeUndefined();
+		expect(red.caption).toEqual(cmyk(0, 0, 0, 1));
+		expect(labelColours({ bg: 'transparent' }).fill).toBeUndefined();
+		expect(labelColours({ bg: '#ffffcc' }).fill).toEqual(rgb(1, 1, 0.8));
+	});
+
+	it('lays out in colour with a fill behind each code', async () => {
+		const pdf = await layoutLabels(items(3), '5160', { fg: '#003366', bg: '#eeeeee', codeSizeMm: 15 });
+		const doc = await PDFDocument.load(pdf);
+		expect(doc.getPageCount()).toBe(1);
+	});
+
 	it('rejects an unknown sheet', () => {
 		expect(() => labelsPerSheet('nope')).toThrow(/Unknown label sheet/);
 	});

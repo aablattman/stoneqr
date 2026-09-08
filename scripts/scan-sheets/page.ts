@@ -20,12 +20,15 @@ import {
 	moduleMm,
 	contrastRatio,
 	maxScanDistanceM,
+	LOGO_BLOCK_COVER,
 	type EncodedQr,
 	type Ecc,
 	type HalftoneOptions,
 	type RasterImage
 } from '../../apps/site/node_modules/@stoneqr/engine';
 import { renderStyled, type StyleOptions } from '../../apps/site/src/lib/styled';
+import { fitLogo, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '../../apps/site/src/lib/logo-size';
+import { prepareSvgLogo } from '../../apps/site/src/lib/logo-svg';
 import { svgToCanvas, canvasToPngBlob, canvasImageData } from '../../apps/site/src/lib/svg-raster';
 import { loadImageRaster, rasterToPngBlob } from '../../apps/site/src/lib/halftone';
 import { GLYPHS, glyphDataUrl } from '../../apps/site/src/lib/glyphs';
@@ -61,8 +64,14 @@ interface StyledSpec {
 	fg?: string;
 	bg?: string;
 	gradientTo?: string;
-	logo?: 'favicon';
-	logoArea?: number; // fraction of the code's area
+	logo?: LogoPicture;
+	/**
+	 * Logo width as a fraction of the code's width; the reachable widths are a staircase.
+	 * `'widest'` resolves to the largest tread this code still allows, which depends on how
+	 * many modules the payload produced.
+	 */
+	logoWidth?: number | 'widest';
+	/** False paints the logo over the modules instead of clearing them. */
 	logoKnockout?: boolean;
 	frame?: string;
 }
@@ -108,6 +117,28 @@ const halftone = (id: string, mm: number, what: string, picture: HalftoneSpec['p
 	spec: { kind: 'halftone', payload: scanUrl(id), picture, opts: { dotScale: 0.4, ...opts } }
 });
 
+/** Which drawing a styled row puts in the middle. The SVG ones go through the upload path. */
+type LogoPicture = 'favicon' | 'favicon-svg' | 'wordmark-svg';
+/** A picture with the shape the hole has to be cut for. */
+interface Pic {
+	url: string;
+	/** Height over width. */
+	aspect: number;
+}
+type Pictures = Record<LogoPicture, Pic> & { photo: string };
+
+/**
+ * The widest logo this code will still let you download: the last tread below the block. It
+ * depends on the payload, because a denser code has more modules to spare.
+ */
+function widestAllowed(input: Omit<Parameters<typeof fitLogo>[1], never>): number {
+	let widest = LOGO_WIDTH_MIN;
+	for (let w = LOGO_WIDTH_MIN; w <= LOGO_WIDTH_MAX + 1e-9; w += 0.01) {
+		if (fitLogo(w, input).cover <= LOGO_BLOCK_COVER) widest = w;
+	}
+	return widest;
+}
+
 const TEST_PHONE = '+1 555 555 0100';
 const eventStart = new Date(2026, 9, 1, 10, 0, 0);
 const eventEnd = new Date(2026, 9, 1, 11, 0, 0);
@@ -127,11 +158,12 @@ const SECTIONS: Section[] = [
 	},
 	{
 		code: 'C',
-		title: 'Logo at 20% of the area, ECC H, knockout on',
-		watch: 'The site warns above 20% and blocks above 25%. This is the largest logo it allows without a warning.',
+		title: 'Logo at the default width, ECC H, clear space on',
+		watch: 'The size the generator opens on. The caption says how much of the code the logo hides; the site warns above 15% and blocks above 20%.',
 		items: [
-			styled('C1', 30, 'Logo 20% · 30 mm', 'classic', { ecc: 'H', logo: 'favicon', logoArea: 0.2, logoKnockout: true }),
-			styled('C2', 50, 'Logo 20% · 50 mm', 'classic', { ecc: 'H', logo: 'favicon', logoArea: 0.2, logoKnockout: true })
+			styled('C1', 30, 'Logo 20% width · 30 mm', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 0.2, logoKnockout: true }),
+			styled('C2', 50, 'Logo 20% width · 50 mm', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 0.2, logoKnockout: true }),
+			styled('C3', 30, 'Logo as wide as the site allows', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 'widest', logoKnockout: true })
 		]
 	},
 	{
@@ -229,13 +261,24 @@ const SECTIONS: Section[] = [
 				})
 			}),
 			styled('L5', 30, 'Dots preset, ECC L', 'dots', { ecc: 'L' }),
-			styled('L6', 30, 'Logo at 25% area, knockout off', 'classic', { ecc: 'H', logo: 'favicon', logoArea: 0.25, logoKnockout: false }),
+			styled('L6', 30, 'Logo at the widest, painted over the modules', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 0.32, logoKnockout: false }),
 			halftone('L7', 30, 'Photo, smallest dots 0.25, no fade', 'photo', { dotScale: 0.25 }),
 			styled('L8', 30, 'Gradient to a light teal', 'classic', { fg: '#1b1917', gradientTo: '#5aa896' }),
 			plain('L9', 30, 'Quiet zone 1 module', { quiet: 1 }),
 			styled('L10', 30, 'Inverted Dots preset', 'dots', { fg: '#ffffff', bg: '#000000' }),
 			styled('L11', 30, 'Leaf preset (classy shapes)', 'leaf'),
 			halftone('L12', 30, 'Silhouette Heart, cut 25% (thin shape)', { glyph: 'heart' }, { threshold: 0.25 })
+		]
+	},
+	{
+		code: 'M',
+		title: 'SVG logos, rebuilt on upload',
+		watch:
+			'The same mark as row C, uploaded as SVG and put through the real preparation; the site warns above 15% hidden and blocks above 20%. M3 is a wide wordmark, which should sit in a wide hole rather than a square one. The sheet prints a raster of each, as every styled row does; that an SVG stays vector in the SVG download is checked by "bun run logo-fixtures".',
+		items: [
+			styled('M1', 30, 'SVG mark · 30 mm', 'classic', { ecc: 'H', logo: 'favicon-svg', logoWidth: 0.2, logoKnockout: true }),
+			styled('M2', 50, 'SVG mark · 50 mm', 'classic', { ecc: 'H', logo: 'favicon-svg', logoWidth: 0.2, logoKnockout: true }),
+			styled('M3', 30, 'Wide wordmark · 30 mm', 'classic', { ecc: 'H', logo: 'wordmark-svg', logoWidth: 0.28, logoKnockout: true })
 		]
 	}
 ];
@@ -253,6 +296,8 @@ interface Rendered {
 	moduleMm: number;
 	version: number;
 	decoded: boolean;
+	/** Something worth reading on the sheet that is not a problem. */
+	detail?: string;
 	note: string;
 	vector?: { qr: EncodedQr; quiet: number; fg: string; bg: string };
 	png?: Uint8Array;
@@ -267,6 +312,19 @@ const log = (line: string, ok = true) => {
 	logEl.append(p);
 	void fetch('/log', { method: 'POST', body: line });
 };
+
+/**
+ * An SVG through the same preparation an upload gets, so the sheet prints what the site would
+ * actually place: sanitised, sized, clipped, and with its ids scoped.
+ */
+async function svgLogo(path: string): Promise<Pic> {
+	const text = await fetch(path).then((r) => {
+		if (!r.ok) throw new Error(`${path} is missing`);
+		return r.text();
+	});
+	const prepared = prepareSvgLogo(text);
+	return { url: prepared.dataUrl, aspect: prepared.height / prepared.width };
+}
 
 async function faviconPngDataUrl(): Promise<string> {
 	const svg = await fetch('/favicon.svg').then((r) => r.text());
@@ -357,7 +415,7 @@ const hexToRgb = (hex: string): [number, number, number] => {
 	return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
 };
 
-async function renderItem(item: Item, pictures: { favicon: string; photo: string }): Promise<Rendered> {
+async function renderItem(item: Item, pictures: Pictures): Promise<Rendered> {
 	const spec = item.spec;
 	if (spec.kind === 'plain') {
 		const quiet = spec.quiet ?? QUIET;
@@ -382,6 +440,17 @@ async function renderItem(item: Item, pictures: { favicon: string; photo: string
 	if (spec.kind === 'styled') {
 		const qr = encode(spec.payload, { ecc: spec.ecc, minVersion: 2 });
 		const look = LOOKS.find((l) => l.id === spec.look)!;
+		const pic = spec.logo ? pictures[spec.logo] : undefined;
+		const holeInput = {
+			modules: qr.size,
+			version: qr.version,
+			ecc: spec.ecc,
+			margin: spec.logoKnockout === false ? 0 : 1,
+			aspect: pic?.aspect ?? 1
+		};
+		const width =
+			spec.logoWidth === 'widest' ? widestAllowed(holeInput) : typeof spec.logoWidth === 'number' ? spec.logoWidth : 0;
+		const fit = pic && width ? fitLogo(width, holeInput) : undefined;
 		const opts: StyleOptions = {
 			payload: spec.payload,
 			ecc: spec.ecc,
@@ -395,8 +464,10 @@ async function renderItem(item: Item, pictures: { favicon: string; photo: string
 			gradient: spec.gradientTo ? 'linear' : 'none',
 			gradientTo: spec.gradientTo ?? spec.fg ?? '#000000',
 			gradientAngleDeg: 45,
-			logo: spec.logo ? pictures.favicon : undefined,
-			logoSize: spec.logoArea ? Math.sqrt(spec.logoArea) : 0,
+			logo: pic?.url,
+			// The library takes a coefficient of the error-correction budget, not a size, so the
+			// width is turned into one exactly as the generator does, using the picture's own shape.
+			logoCoefficient: fit?.coefficient ?? 0,
 			logoKnockout: spec.logoKnockout ?? true,
 			logoMargin: 1,
 			frame: { enabled: !!spec.frame, text: spec.frame ?? '', color: '#000000', textColor: '#ffffff' }
@@ -414,6 +485,8 @@ async function renderItem(item: Item, pictures: { favicon: string; photo: string
 			moduleMm: moduleMm(item.mm, result.size, QUIET),
 			version: qr.version,
 			decoded: check.ok,
+			// The thresholds are in the section's note, so the caption keeps to the measurements.
+			detail: fit ? `logo ${Math.round(fit.width * 100)}% wide, hides ${Math.round(fit.cover * 100)}%` : undefined,
 			note: '',
 			png
 		};
@@ -421,7 +494,7 @@ async function renderItem(item: Item, pictures: { favicon: string; photo: string
 	// Photo QR
 	const qr = encode(spec.payload, { ecc: 'H', minVersion: halftoneVersionFor(spec.payload) });
 	const src =
-		spec.picture === 'photo' ? pictures.photo : spec.picture === 'favicon' ? pictures.favicon : glyphDataUrl(GLYPHS.find((g) => g.id === spec.picture.glyph)!);
+		spec.picture === 'photo' ? pictures.photo : spec.picture === 'favicon' ? pictures.favicon.url : glyphDataUrl(GLYPHS.find((g) => g.id === spec.picture.glyph)!);
 	const source: RasterImage = await loadImageRaster(src, 1024);
 	const result = halftoneWithFallback(qr, source, spec.payload, spec.opts);
 	const total = qr.size + 2 * QUIET;
@@ -560,6 +633,7 @@ class Sheet {
 		const out: { text: string; bad?: boolean }[] = [{ text: `${r.item.id}  ${r.item.mm} mm` }];
 		for (const l of this.wrap(r.item.what, 7, this.font, widthMm)) out.push({ text: l });
 		out.push({ text: `v${r.version} · ${r.moduleMm.toFixed(2)} mm modules` });
+		if (r.detail) for (const l of this.wrap(r.detail, 7, this.font, widthMm)) out.push({ text: l });
 		out.push(r.decoded ? { text: 'software decode: yes' } : { text: 'software decode: NO', bad: true });
 		if (r.note) for (const l of this.wrap(r.note, 7, this.font, widthMm)) out.push({ text: l, bad: true });
 		return out;
@@ -695,12 +769,40 @@ class Sheet {
 
 // ---------------------------------------------------------------------------------------------
 
+/**
+ * The row IDs printed here and the ones in `docs/scan-matrix.md` have to stay in step, or a
+ * result gets written against the wrong code. Comparing the two beats remembering to.
+ */
+async function checkMatrixInStep(ids: string[]): Promise<number> {
+	const res = await fetch('/scan-matrix.md');
+	if (!res.ok) {
+		log('Could not read docs/scan-matrix.md to check the row IDs', false);
+		return 1;
+	}
+	const doc = await res.text();
+	const inDoc = new Set([...doc.matchAll(/^\|\s*([A-Z]\d+)\s*\|/gm)].map((m) => m[1]!));
+	const missing = ids.filter((id) => !inDoc.has(id));
+	const extra = [...inDoc].filter((id) => !ids.includes(id));
+	if (!missing.length && !extra.length) {
+		log(`Row IDs match docs/scan-matrix.md (${ids.length} codes)`);
+		return 0;
+	}
+	if (missing.length) log(`On the sheet but not in the matrix: ${missing.join(', ')}`, false);
+	if (extra.length) log(`In the matrix but not on the sheet: ${extra.join(', ')}`, false);
+	return missing.length + extra.length;
+}
+
 async function main(): Promise<void> {
 	const built = new Date().toISOString().slice(0, 10);
 	const favicon = await faviconPngDataUrl();
 	const photo = await photoDataUrl();
 	log(photo.synthetic ? 'Photo: painted stand-in (pass --photo <file> for a real one)' : 'Photo: the file you passed');
-	const pictures = { favicon, photo: photo.url };
+	const pictures: Pictures = {
+		favicon: { url: favicon, aspect: 1 },
+		'favicon-svg': await svgLogo('/favicon.svg'),
+		'wordmark-svg': await svgLogo('/logo-fixture/wordmark.svg'),
+		photo: photo.url
+	};
 
 	const rendered = new Map<string, Rendered[]>();
 	const all: Rendered[] = [];
@@ -722,6 +824,10 @@ async function main(): Promise<void> {
 		}
 		rendered.set(section.code, list);
 	}
+
+	// Kept apart from the decode count: a doc that has drifted is a different problem from a
+	// code that will not read, and conflating them would hide one behind the other.
+	const drift = await checkMatrixInStep(all.map((r) => r.item.id));
 
 	status.textContent = 'Building the PDF…';
 	const doc = await PDFDocument.create();
@@ -759,8 +865,11 @@ async function main(): Promise<void> {
 	sheet.numberPages();
 
 	const bytes = await doc.save();
-	await fetch('/save', { method: 'POST', body: bytes });
-	status.textContent = `Done: ${all.length} codes on ${sheet.pages.length} pages, ${failures} failed the software decode. docs/scan-sheets.pdf is written; you can close this tab.`;
+	await fetch('/save', { method: 'POST', body: bytes, headers: { 'x-decode-failures': String(failures), 'x-matrix-drift': String(drift) } });
+	const trouble = [failures ? `${failures} failed the software decode` : '', drift ? `${drift} row ID out of step with the matrix` : '']
+		.filter(Boolean)
+		.join(', ');
+	status.textContent = `Done: ${all.length} codes on ${sheet.pages.length} pages${trouble ? `, ${trouble}` : ', everything decoded and the matrix is in step'}. docs/scan-sheets.pdf is written; you can close this tab.`;
 }
 
 main().catch((e) => {

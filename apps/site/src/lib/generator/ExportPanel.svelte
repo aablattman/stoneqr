@@ -10,6 +10,8 @@
 	import { snapshot, compact, encodeHash } from './persist';
 	import { defaults } from './defaults';
 	import { SIZE_TIERS, tierFor, tierFit, tierDistance, formatDistance, formatIn } from './sizes';
+	import { halftonePngSize } from './halftone-png';
+	import { testSheetSizes, testSheetPage } from './test-sheet';
 
 	let { design, advanced = false }: { design: Design; advanced?: boolean } = $props();
 
@@ -43,24 +45,14 @@
 	const eccs: Ecc[] = ['L', 'M', 'Q', 'H'];
 
 	const halftoneOnly = 'Photo QR downloads as PNG or SVG';
-	const HALFTONE_MAX_SIDE = 4096;
-
-	/**
-	 * Pixels per module for a halftone PNG. Capped at 4096 px per side (about 17 megapixels): the
-	 * picture is at most 1024 px to begin with, so more pixels add nothing, and past this PNG
-	 * encoding alone takes seconds on a laptop.
-	 */
-	const halftonePxPerModule = $derived.by(() => {
-		if (!design.encoded) return 0;
-		const total = design.encoded.size + 2 * design.quietZone;
-		return Math.min(Math.max(2, Math.floor(HALFTONE_MAX_SIDE / total)), Math.max(2, Math.round(((design.widthMm / 25.4) * design.dpi) / total)));
-	});
-	/** Side of the PNG the button will produce, so Basic can show it instead of a dpi figure. */
-	const pngPx = $derived(
-		design.encoded && design.halftoneActive
-			? halftonePxPerModule * (design.encoded.size + 2 * design.quietZone)
-			: Math.round((artWidthMm / 25.4) * design.dpi)
+	/** The Photo QR PNG's pixel size and the dpi that prints it at the chosen width (see `halftone-png.ts`). */
+	const halftonePng = $derived(
+		design.encoded && design.halftoneActive ? halftonePngSize(design.encoded.size + 2 * design.quietZone, design.widthMm, design.dpi) : null
 	);
+	/** Side of the PNG the button will produce, so Basic can show it instead of a dpi figure. */
+	const pngPx = $derived(halftonePng ? halftonePng.widthPx : Math.round((artWidthMm / 25.4) * design.dpi));
+	/** What the PNG ticket says: the dpi the file will carry, which differs from the setting only when the Photo QR cap held. */
+	const pngDpiLabel = $derived(halftonePng?.capped ? `${Math.round(halftonePng.dpi)} dpi` : `${design.dpi} dpi`);
 
 	let busy = $state('');
 	let copied = $state(false);
@@ -116,16 +108,18 @@
 	const png = () =>
 		run('png', async () => {
 			if (!design.encoded) return;
-			if (design.halftoneActive && design.halftoneImage) {
-				const { halftonePng } = await import('$lib/halftone-export');
+			if (design.halftoneActive && design.halftoneImage && halftonePng) {
+				const { halftonePng: renderHalftonePng } = await import('$lib/halftone-export');
 				const { loadImageRaster } = await import('$lib/halftone');
 				// Rendered and encoded in a Web Worker so a poster-size raster never freezes the page.
+				// The file carries the dpi that prints it at the chosen width from the pixels it has,
+				// which is below the setting once the 4096 px cap holds.
 				pngProgress = 'Preparing…';
-				const bytes = await halftonePng(
+				const bytes = await renderHalftonePng(
 					design.encoded,
 					await loadImageRaster(design.halftoneImage),
-					{ ...halftoneOpts(), pxPerModule: halftonePxPerModule },
-					design.dpi,
+					{ ...halftoneOpts(), pxPerModule: halftonePng.pxPerModule },
+					halftonePng.dpi,
 					(p) => {
 						pngProgress = p.phase === 'render' ? `Rendering ${Math.round(p.fraction * 100)}%` : 'Encoding…';
 					}
@@ -134,7 +128,8 @@
 				return;
 			}
 			if (!design.styled) {
-				const r = exportPng(design.encoded, { widthMm: design.widthMm, dpi: design.dpi, quietZone: design.quietZone, fg: design.fg, bg: design.transparentBg ? '#ffffff' : design.bg });
+				// `bgColor` is 'transparent' when asked, which the exporter writes as alpha 0, as the SVG, PDF, and EPS already do.
+				const r = exportPng(design.encoded, { widthMm: design.widthMm, dpi: design.dpi, quietZone: design.quietZone, fg: design.fg, bg: design.bgColor });
 				downloadBytes(r.png, `${name}-${design.dpi}dpi.png`, 'image/png');
 			} else {
 				const px = Math.round((artWidthMm / 25.4) * design.dpi);
@@ -150,7 +145,8 @@
 			const title = `QR code: ${describe(design.type)}`;
 			if (!design.styled) {
 				const { exportPdf } = await import('@stoneqr/engine/export/pdf');
-				const bytes = await exportPdf(design.encoded, { widthMm: design.widthMm, quietZone: design.quietZone, fg: design.fg, bg: design.bgColor, title, cmyk: true });
+				// No page margin: the artboard is the code's printed width, as the SVG and EPS artboards are.
+				const bytes = await exportPdf(design.encoded, { widthMm: design.widthMm, marginMm: 0, quietZone: design.quietZone, fg: design.fg, bg: design.bgColor, title, cmyk: true });
 				downloadBytes(bytes, `${name}.pdf`, 'application/pdf');
 			} else {
 				const { styledPdf } = await import('$lib/styled-pdf');
@@ -160,7 +156,7 @@
 
 	const eps = () => {
 		if (!design.encoded) return;
-		downloadText(exportEps(design.encoded, { widthMm: design.widthMm, quietZone: design.quietZone, fg: design.fg, bg: design.bgColor }), `${name}.eps`, 'application/postscript');
+		downloadText(exportEps(design.encoded, { widthMm: design.widthMm, quietZone: design.quietZone, fg: design.fg, bg: design.bgColor, title: `QR code: ${describe(design.type)}` }), `${name}.eps`, 'application/postscript');
 	};
 
 	const testSheet = () =>
@@ -169,11 +165,13 @@
 			const label = `Encodes a ${describe(design.type)} · ECC ${design.ecc} · version ${design.encoded.version}`;
 			if (!design.styled) {
 				const { exportTestSheet } = await import('@stoneqr/engine/export/pdf');
-				downloadBytes(await exportTestSheet(design.encoded, { quietZone: design.quietZone, fg: design.fg, bg: design.bgColor, label }), `${name}-test-sheet.pdf`, 'application/pdf');
+				downloadBytes(await exportTestSheet(design.encoded, { sizesMm: testSheetSizes(design.widthMm), pageSize: testSheetPage(design.unit, navigator.language), quietZone: design.quietZone, fg: design.fg, bg: design.bgColor, label }), `${name}-test-sheet.pdf`, 'application/pdf');
 			} else {
 				const { styledTestSheet } = await import('$lib/styled-pdf');
 				downloadBytes(
 					await styledTestSheet(svgText, {
+						sizesMm: testSheetSizes(design.widthMm),
+						pageSize: testSheetPage(design.unit, navigator.language),
 						label,
 						bg: design.transparentBg ? undefined : design.bg,
 						moduleCount: design.encoded.size + 2 * design.quietZone,
@@ -368,7 +366,7 @@
 					{design.halftoneActive
 						? 'Forced to H while a picture is blended in.'
 						: design.logo
-							? 'Forced to H while a logo is present.'
+							? 'Forced to H while a logo is present, so the hidden modules can be rebuilt.'
 							: { L: 'Survives 7% damage. Smallest code.', M: 'Survives 15%. The sensible default.', Q: 'Survives 25%.', H: 'Survives 30%. Needed for logos.' }[design.ecc]}
 				</p>
 			</div>
@@ -434,7 +432,7 @@
 					{#if busy === 'png' && pngProgress}
 						<span class="text-xs">{pngProgress}</span>
 					{:else}
-						<span>PNG</span><span class="ticket">{design.dpi} dpi</span>
+						<span>PNG</span><span class="ticket">{pngDpiLabel}</span>
 					{/if}
 				</button>
 				<button
@@ -467,7 +465,10 @@
 					<option value={300}>300 dpi (print)</option>
 					<option value={600}>600 dpi (fine print)</option>
 				</select>
-				<p class="hint">Makes a <span class="num">{pngPx} px</span> image at this print size.</p>
+				<p class="hint">
+					Makes a <span class="num">{pngPx} px</span> image at this print size.
+					{#if halftonePng?.capped}Photo QR stops at 4096 px a side, so this file carries <span class="num">{Math.round(halftonePng.dpi)} dpi</span> and still prints at the width above.{/if}
+				</p>
 			</div>
 		{:else}
 			<!-- Basic: one obvious download, two for specialists, each saying who it is for. -->
@@ -499,7 +500,7 @@
 		{/if}
 		{#if design.encoded && !canExport}
 			<p class="hint">
-				{#if design.verify === 'checking'}Checking that the code decodes…{:else if design.verify === 'fail'}Downloads unlock once the code decodes on your device.{:else if !design.widthValid}Enter a print width to download.{:else if design.logoBlocked}Shrink the logo below 25% of the area to download.{:else}Fix the blocking issue above to download.{/if}
+				{#if design.verify === 'checking'}Checking that the code decodes…{:else if design.verify === 'fail'}Downloads unlock once the code decodes on your device.{:else if !design.widthValid}Enter a print width to download.{:else if design.logoBlocked}The logo hides too much of the code to print safely. Shrink it to download.{:else}Fix the blocking issue above to download.{/if}
 			</p>
 		{/if}
 		{#if exportError}

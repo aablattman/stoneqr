@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { contrastRatio, LOGO_BLOCK_RATIO, LOGO_WARN_RATIO } from '@stoneqr/engine';
+	import { contrastRatio, paperColor, LOGO_BLOCK_COVER, LOGO_WARN_COVER } from '@stoneqr/engine';
+	import { isSvgFile, pictureFileProblem } from './pictures';
+	import { LOGO_WIDTH_DEFAULT, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '$lib/logo-size';
 	import { preloadStyled, FRAME, type CornerDotStyle, type CornerSquareStyle, type DotStyle } from '$lib/styled';
 	import { LOOKS, type LookId } from '$lib/looks';
 	import ColourField from '$lib/components/ColourField.svelte';
@@ -56,16 +58,33 @@
 	const looks: readonly { id: LookId | 'custom'; label: string }[] = LOOKS;
 	const ctas = ['Scan me', 'Scan to RSVP', 'Scan for menu', 'Scan to join WiFi', 'Scan to save contact', 'Scan for details'];
 
-	/** The weaker of the code and corner contrasts: the corners are what a scanner finds first. */
-	const contrast = $derived(design.transparentBg ? null : contrastRatio(design.weakestFg, design.bg));
-	/** The contrast badge: a verdict in Basic, the ratio and the verdict in Advanced. */
+	/**
+	 * The weaker of the code and corner contrasts, against the background or, when that is
+	 * transparent, against white paper, which is what the sizing rules assume it prints on.
+	 * The corners are what a scanner finds first.
+	 */
+	const contrast = $derived(contrastRatio(design.weakestFg, paperColor(design.bgColor)));
+	/** The contrast badge: a verdict in Basic, the ratio and the verdict in Advanced, naming the paper when the background is transparent. */
 	const contrastLabel = $derived.by(() => {
-		if (contrast === null) return '';
 		// Not "clear": beside a Colours heading that reads as a colour.
 		const verdict = contrast >= 4 ? 'good' : 'low';
-		return advanced ? `${contrast.toFixed(1)}:1 ${verdict}` : `${verdict === 'good' ? 'Good' : 'Low'} contrast`;
+		if (!advanced) return `${verdict === 'good' ? 'Good' : 'Low'} contrast`;
+		return `${contrast.toFixed(1)}:1 ${verdict}${design.transparentBg ? ' on white' : ''}`;
 	});
-	const logoPct = $derived(Math.round(design.logoAreaRatio * 100));
+	/**
+	 * What the logo actually came out as, never what the slider asked for. A hole is a whole odd
+	 * number of modules, so the reachable widths are a staircase and the readout steps with them.
+	 * Basic gets the width alone; Advanced also gets the share of the code the logo hides, which
+	 * is the number the error correction cares about and the one the warnings are set against.
+	 */
+	const logoReadout = $derived.by(() => {
+		const fit = design.logoFit;
+		// Until there is content there is no code, so no staircase to land on: show what was asked.
+		if (!design.encoded) return `${Math.round(design.logoWidth * 100)}% of width`;
+		if (!fit.logoW) return 'no room';
+		const width = `${Math.round(fit.width * 100)}% of width`;
+		return advanced ? `${width} · hides ${Math.round(fit.cover * 100)}%` : width;
+	});
 	/** The whole panel is inert while a halftone picture owns the render. */
 	const off = $derived(design.halftoneActive);
 
@@ -95,37 +114,51 @@
 		if (design.gradient !== 'none') parts.push('Gradient');
 		if (design.fg !== '#000000' || design.cornerColor !== null || (design.bg !== '#ffffff' && !design.transparentBg)) parts.push('Colour');
 		if (design.transparentBg) parts.push('Transparent');
-		if (design.logo) parts.push('Logo');
+		// Painting over the modules is the unusual choice, so a folded panel says so.
+		if (design.logo) parts.push(design.logoKnockout ? 'Logo' : 'Logo over modules');
 		if (design.frameEnabled) parts.push('Frame');
 		return parts.join(' · ');
 	});
 
 	let logoError = $state('');
+	/** Things worth telling someone about the file they just dropped, shown under the tile. */
+	let logoNotes = $state<string[]>([]);
+
 	async function onLogo(file: File) {
 		logoError = '';
-		if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
-			logoError = 'Use a PNG, JPEG, or WebP. SVG logos are coming later.';
-			return;
-		}
-		if (file.size > 2 * 1024 * 1024) {
-			logoError = 'Keep the logo under 2 MB. It only needs to be a few hundred pixels.';
+		logoNotes = [];
+		// The same rules a design file is held to; see `pictures.ts`.
+		const problem = pictureFileProblem('logo', file);
+		if (problem) {
+			logoError = problem;
 			return;
 		}
 		try {
-			design.logo = await new Promise<string>((res, rej) => {
-				const r = new FileReader();
-				r.onload = () => res(String(r.result));
-				r.onerror = () => rej(new Error('Could not read the file'));
-				r.readAsDataURL(file);
-			});
+			if (isSvgFile(file)) {
+				// An uploaded SVG is a document, not a picture: it is rebuilt before anything sees
+				// it. Loaded on demand so the work stays out of the generator's first chunk.
+				const { prepareSvgLogo } = await import('$lib/logo-svg');
+				const prepared = prepareSvgLogo(await file.text());
+				design.logo = prepared.dataUrl;
+				logoNotes = prepared.notes;
+			} else {
+				design.logo = await new Promise<string>((res, rej) => {
+					const r = new FileReader();
+					r.onload = () => res(String(r.result));
+					r.onerror = () => rej(new Error('Could not read the file'));
+					r.readAsDataURL(file);
+				});
+			}
 			design.logoName = file.name;
 		} catch (e) {
 			logoError = e instanceof Error ? e.message : String(e);
 		}
 	}
 	function clearLogo() {
+		logoNotes = [];
 		design.logo = undefined;
 		design.logoName = '';
+		design.logoAspect = 1;
 		logoError = '';
 	}
 </script>
@@ -157,16 +190,14 @@
 			<div class="grid gap-3">
 				<p class="subhead">
 					Colours
-					{#if contrast !== null}
-						<span class="subhead-end">
-							<span
-								class="badge {contrast >= 4 ? 'badge-ok' : 'badge-warn'}"
-								title="Contrast ratio, WCAG formula. Scanners read with red light, so keep it high."
-							>
-								{contrastLabel}
-							</span>
+					<span class="subhead-end">
+						<span
+							class="badge {contrast >= 4 ? 'badge-ok' : 'badge-warn'}"
+							title="Contrast ratio, WCAG formula. Scanners read with red light, so keep it high."
+						>
+							{contrastLabel}
 						</span>
-					{/if}
+					</span>
 				</p>
 				<!-- Side by side except in the lg band, where the column is ~306 px and a "#000000"
 				     field loses its last character. -->
@@ -247,44 +278,57 @@
 				<DropTile
 					src={design.logo ?? ''}
 					name={design.logoName}
-					accept="image/png,image/jpeg,image/webp"
+					accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
 					label="Drop a logo here, or choose a file"
-					hint="PNG, JPEG, or WebP. It stays in your browser."
+					hint="PNG, JPEG, WebP, or SVG. It stays in your browser."
 					error={logoError}
 					ariaLabel="Upload a logo"
 					disabled={off}
 					onfile={onLogo}
 					onclear={clearLogo}
 				/>
+				{#each logoNotes as note (note)}
+					<p class="notice notice-info">{note}</p>
+				{/each}
 				{#if design.logo}
 					<Slider
 						label="Size"
-						bind:value={design.logoSize}
-						min={0.15}
-						max={0.5}
+						bind:value={design.logoWidth}
+						min={LOGO_WIDTH_MIN}
+						max={LOGO_WIDTH_MAX}
 						step={0.01}
-						reset={0.35}
-						format={() => `${logoPct}% area`}
-						readoutClass={design.logoAreaRatio > LOGO_BLOCK_RATIO
+						reset={LOGO_WIDTH_DEFAULT}
+						format={() => logoReadout}
+						readoutClass={design.logoCover > LOGO_BLOCK_COVER
 							? 'text-block'
-							: design.logoAreaRatio > LOGO_WARN_RATIO
+							: design.logoCover > LOGO_WARN_COVER
 								? 'text-warn'
 								: ''}
 					/>
-					<Slider
-						label="Margin"
-						bind:value={design.logoMargin}
-						min={0}
-						max={3}
-						step={1}
-						reset={1}
-						format={(v) => `${v} mod`}
-					/>
+					{#if design.logoKnockout}
+						<Slider
+							label="Margin"
+							bind:value={design.logoMargin}
+							min={0}
+							max={3}
+							step={1}
+							reset={1}
+							format={(v) => `${v} mod`}
+						/>
+					{/if}
 					<label class="toggle">
 						<input type="checkbox" role="switch" bind:checked={design.logoKnockout} />
 						Clear space behind the logo
 					</label>
-					<p class="hint">Error correction is set to H while a logo is present. Keep the logo under 20% of the area for print.</p>
+					<p class="hint">
+						{#if design.logoKnockout}
+							The modules under the logo are removed and error correction rebuilds them. It is set to H while
+							a logo is present.
+						{:else}
+							The logo is painted straight over the modules, so nothing is cleared for it. Watch the decode
+							badge.
+						{/if}
+					</p>
 				{/if}
 			</div>
 

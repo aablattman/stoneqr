@@ -16,6 +16,7 @@
 	import Swatches from '$lib/components/Swatches.svelte';
 	import ToneArt from '$lib/components/ToneArt.svelte';
 	import type { Design, HalftoneTone } from './state.svelte';
+	import { pictureFileProblem } from './pictures';
 
 	const TONES: { id: HalftoneTone; label: string }[] = [
 		{ id: 'colour', label: 'Colour' },
@@ -48,12 +49,10 @@
 
 	async function onImage(file: File) {
 		imageError = '';
-		if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
-			imageError = 'Use a PNG, JPEG, or WebP.';
-			return;
-		}
-		if (file.size > 8 * 1024 * 1024) {
-			imageError = 'Keep the picture under 8 MB. It is scaled down before it is used anyway.';
+		// The same rules a design file is held to; see `pictures.ts`.
+		const problem = pictureFileProblem('halftone', file);
+		if (problem) {
+			imageError = problem;
 			return;
 		}
 		try {

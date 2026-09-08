@@ -8,11 +8,10 @@ import {
 	renderSvg,
 	THRESHOLD_DEFAULT,
 	assess,
-	contrastRatio,
 	summary,
 	moduleMm,
 	toMm,
-	LOGO_BLOCK_RATIO,
+	LOGO_BLOCK_COVER,
 	type Ecc,
 	type EncodedQr,
 	type HalftoneOptions,
@@ -22,7 +21,9 @@ import {
 } from '@stoneqr/engine';
 import { payloads, PayloadError, wifiWarnings, type PayloadType } from '@stoneqr/engine/payloads';
 import type { CornerDotStyle, CornerSquareStyle, DotStyle, GradientKind } from '$lib/styled';
+import { fitLogo, LOGO_WIDTH_DEFAULT, NO_LOGO } from '$lib/logo-size';
 import { LOOKS, lookFor, type LookId } from '$lib/looks';
+import { weakestForeground } from './contrast';
 
 export interface Fields {
 	url: { url: string };
@@ -119,7 +120,15 @@ export class Design {
 	gradientAngleDeg = $state(45);
 	logo = $state<string | undefined>(undefined);
 	logoName = $state('');
-	logoSize = $state(0.35); // fraction of width; area ≈ logoSize²
+	/**
+	 * How wide the logo should be, as a fraction of the code's width (quiet zone excluded). Only
+	 * some widths are reachable, because a hole is a whole odd number of modules: `logoFit` says
+	 * what was actually achieved and every readout and warning uses that, never this.
+	 */
+	logoWidth = $state(LOGO_WIDTH_DEFAULT);
+	/** The picture's height divided by its width, measured from the file by the Preview. */
+	logoAspect = $state(1);
+	/** True cuts the modules out from under the logo; false paints it over them. */
 	logoKnockout = $state(true);
 	logoMargin = $state(1);
 	frameEnabled = $state(false);
@@ -196,20 +205,18 @@ export class Design {
 		this.cornerColor = c;
 	}
 
+	/** The background the renderers and the sizing rules see: the SVG renderer's word for none when transparent. */
+	bgColor = $derived(this.transparentBg ? 'transparent' : this.bg);
 	/**
-	 * Whichever of the code colour and the corner colour reads worst against the background.
-	 * Sizing and contrast checks look at this one, because a scanner that cannot find the
-	 * finder patterns never gets as far as the data.
+	 * Whichever of the code colour and the corner colour reads worst against the background
+	 * (white paper when transparent). Sizing and contrast checks look at this one, because a
+	 * scanner that cannot find the finder patterns never gets as far as the data. The rule is
+	 * `lib/generator/contrast.ts`, tested in `contrast.test.ts`.
 	 */
-	weakestFg = $derived.by((): string => {
-		if (!this.cornerColor || this.transparentBg) return this.fg;
-		return contrastRatio(this.cornerColor, this.bg) < contrastRatio(this.fg, this.bg) ? this.cornerColor : this.fg;
-	});
+	weakestFg = $derived(weakestForeground(this.fg, this.cornerColor, this.bgColor));
 
 	/** Effective ECC: forced to H whenever a logo or a halftone picture is present. */
 	ecc = $derived<Ecc>(this.logo || this.halftoneActive ? 'H' : this.eccChoice);
-	bgColor = $derived(this.transparentBg ? 'transparent' : this.bg);
-	logoAreaRatio = $derived(this.logo && !this.halftoneActive ? this.logoSize * this.logoSize : 0);
 	widthMm = $derived(toMm(this.width, this.unit));
 	/**
 	 * The Advanced width field can be empty or nonsense mid-edit — clearing it to retype binds
@@ -283,6 +290,28 @@ export class Design {
 	encoded = $derived(this.qr.qr);
 	encodeError = $derived(this.qr.error);
 
+	/** The library forces the margin to nought when the logo is painted over the modules. */
+	effectiveLogoMargin = $derived(this.logoKnockout ? this.logoMargin : 0);
+	/**
+	 * What the styled renderer will actually produce for this logo on this code: the coefficient
+	 * to hand the library, the hole in modules, and the honest width, cover, and area figures.
+	 * Recomputed whenever the content changes, because a longer URL means a denser code and a
+	 * different staircase of reachable sizes.
+	 */
+	logoFit = $derived(
+		this.logo && !this.halftoneActive && this.encoded
+			? fitLogo(this.logoWidth, {
+					modules: this.encoded.size,
+					version: this.encoded.version,
+					ecc: this.ecc,
+					margin: this.effectiveLogoMargin,
+					aspect: this.logoAspect
+				})
+			: NO_LOGO
+	);
+	/** Modules the logo hides, as a fraction of what error correction can rebuild. */
+	logoCover = $derived(this.logoFit.cover);
+
 	plainSvg = $derived(
 		this.encoded
 			? renderSvg(this.encoded, {
@@ -305,7 +334,7 @@ export class Design {
 						quiet: this.quietZone,
 						fg: this.weakestFg,
 						bg: this.bgColor,
-						logoAreaRatio: this.logoAreaRatio,
+						logoCover: this.logoCover,
 						ecc: this.ecc,
 						hasLogo: !!this.logo && !this.halftoneActive,
 						scanDistanceM: this.scanDistanceM ?? undefined
@@ -322,14 +351,14 @@ export class Design {
 					quiet: this.quietZone,
 					fg: this.weakestFg,
 					bg: this.bgColor,
-					logoAreaRatio: this.logoAreaRatio,
+					logoCover: this.logoCover,
 					ecc: this.ecc,
 					hasLogo: !!this.logo && !this.halftoneActive,
 					scanDistanceM: this.scanDistanceM ?? undefined
 				})
 			: 'blocked'
 	);
-	logoBlocked = $derived(this.logoAreaRatio > LOGO_BLOCK_RATIO);
+	logoBlocked = $derived(this.logoCover > LOGO_BLOCK_COVER);
 
 	// Verification is driven by the Preview component (it owns the debounce and the canvas).
 	verify = $state<VerifyState>('idle');
@@ -439,6 +468,9 @@ export function buildPayload(type: PayloadType, f: Fields, shortUrl: string | nu
 		if (e instanceof PayloadError) return { payload: '', error: e.message, warnings: [], empty: false };
 		return { payload: '', error: e instanceof Error ? e.message : String(e), warnings: [], empty: false };
 	}
+	// Every known type returned above. `apply` refuses a type it does not know, so this is a
+	// second fence rather than a live path: a design must never be left without a result.
+	return empty;
 }
 
 function clean<T extends object>(o: T): Partial<T> {

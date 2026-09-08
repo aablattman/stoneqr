@@ -50,6 +50,10 @@
 		const opts = {
 			pxPerModule: 8,
 			quietZone: design.quietZone,
+			// The code and background colours, which the renderer has always taken and the site never passed
+			// (audit 2026-09-06). The worker, the SVG download, and the decode check all copy these options.
+			dark: hexToRgb(design.fg),
+			light: design.transparentBg ? ([255, 255, 255] as [number, number, number]) : hexToRgb(design.bg),
 			dotScale: design.halftoneDotScale,
 			imageDim: design.halftoneDim,
 			grayscale: design.halftoneGrayscale,
@@ -108,6 +112,36 @@
 		if (design.halftonePreviewUrl) URL.revokeObjectURL(design.halftonePreviewUrl);
 	});
 
+	/**
+	 * The logo's shape decides how the library cuts the hole, so the size prediction in
+	 * `logo-size.ts` needs it. Measure it from the picture itself rather than trusting what was
+	 * stored, so a design restored from a file, a saved record, or an older format is right too.
+	 * Until it resolves the design assumes a square, which is correct for most logos and off by a
+	 * readout tick for the rest.
+	 */
+	let aspectFor = '';
+	$effect(() => {
+		const src = design.logo;
+		if (!src) {
+			// Leave the aspect alone: on a reload the logo arrives from IndexedDB after the settings,
+			// and resetting here threw the restored value away. Clearing the logo resets it instead.
+			aspectFor = '';
+			return;
+		}
+		if (src === aspectFor) return;
+		let live = true;
+		const img = new Image();
+		img.onload = () => {
+			if (!live || !img.naturalWidth || !img.naturalHeight) return;
+			aspectFor = src;
+			design.logoAspect = img.naturalHeight / img.naturalWidth;
+		};
+		img.src = src;
+		return () => {
+			live = false;
+		};
+	});
+
 	// Styled rendering: re-render when any style input changes (lazy chunk loads on first use).
 	let styledSeq = 0;
 	$effect(() => {
@@ -131,7 +165,8 @@
 			gradientTo: design.gradientTo,
 			gradientAngleDeg: design.gradientAngleDeg,
 			logo: design.logo,
-			logoSize: design.logoSize,
+			logoCoefficient: design.logoFit.coefficient,
+			title: `QR code: ${describe(design.type)}`,
 			logoKnockout: design.logoKnockout,
 			logoMargin: design.logoMargin,
 			frame: { enabled: design.frameEnabled, text: design.frameText, color: design.frameColor, textColor: design.frameTextColor }

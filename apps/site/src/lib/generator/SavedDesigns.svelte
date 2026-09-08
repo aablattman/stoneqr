@@ -207,20 +207,37 @@
 			error = 'Opening a file replaces the design you are working on. Choose the file again to go ahead, or save first.';
 			return;
 		}
+		// A design file comes off the person's disk, so an SVG logo in one is untrusted markup and
+		// is rebuilt exactly as an upload would be. Every other way a logo reaches the design has
+		// already been through that: the upload tile, or this browser's own storage.
+		const notes = [...parsed.notes];
+		let logo = parsed.logo;
+		if (logo && /^data:image\/svg\+xml[;,]/i.test(logo)) {
+			try {
+				const { prepareSvgLogo, decodeSvgDataUrl } = await import('$lib/logo-svg');
+				logo = prepareSvgLogo(decodeSvgDataUrl(logo)).dataUrl;
+			} catch {
+				logo = undefined;
+				notes.push('The logo in that file could not be read, so the design opened without it.');
+			}
+		}
 		apply(design, parsed.record);
 		design.type = parsed.type;
-		design.logo = parsed.logo;
-		if (!parsed.logo) design.logoName = '';
+		design.logo = logo;
+		if (!logo) design.logoName = '';
 		design.halftoneImage = parsed.halftone;
 		if (!parsed.halftone) design.halftoneImageName = '';
 		try {
 			const record = snapshot(design);
+			// The rebuilt logo is what gets kept, never the file's own markup.
 			const saved = await saveDesign({
-				name: parsed.name, type: design.type, thumb: design.plainSvg, record, logo: parsed.logo, halftone: parsed.halftone
+				name: parsed.name, type: design.type, thumb: design.plainSvg, record, logo, halftone: parsed.halftone
 			});
 			setOpened({ id: saved.id, name: saved.name, json: JSON.stringify(record) });
 			await refresh();
-			open = false;
+			// The design is open either way; a note keeps the dialog up so it can be read.
+			if (notes.length) error = notes.join(' ');
+			else open = false;
 		} catch (err) {
 			fail(err, 'keep the opened file');
 		}

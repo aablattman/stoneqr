@@ -14,10 +14,15 @@ export const MODULE_MM_WARN = 0.4;
 export const MODULE_MM_GOOD = 0.5;
 /** Minimum WCAG contrast ratio between foreground and background. */
 export const CONTRAST_MIN = 4;
-/** Logo area as a fraction of the symbol: above this, warn. */
-export const LOGO_WARN_RATIO = 0.2;
-/** Logo area as a fraction of the symbol: above this, block. */
-export const LOGO_BLOCK_RATIO = 0.25;
+/**
+ * How much of the code a centre logo hides, as a fraction of the modules error correction is
+ * rationed against (see `logo-size.ts` on the site for the budget). Level H can rebuild about
+ * 30% of the symbol, so these leave half the budget in hand at the warning and a third at the
+ * block: print, glare, a bent flyer, and a cheap phone lens all spend from the same allowance.
+ */
+export const LOGO_WARN_COVER = 0.15;
+/** Hidden fraction above which the code is treated as unprintable and downloads are locked. */
+export const LOGO_BLOCK_COVER = 0.2;
 /** Safety factor on the 10:1 scan-distance rule, for poor light and off-axis reads. */
 export const SCAN_SAFETY = 1.25;
 
@@ -192,11 +197,14 @@ export interface SizingInput {
 	fg?: string;
 	/** Light colour. Default '#ffffff'. */
 	bg?: string;
-	/** Logo area as a fraction of the symbol area, 0..1. */
-	logoAreaRatio?: number;
+	/**
+	 * Modules hidden by a centre logo, as a fraction of the error-correction budget, 0..1.
+	 * This is what the code is asked to rebuild, not the logo's share of the picture.
+	 */
+	logoCover?: number;
 	/** Error-correction level in use. Default 'M'. */
 	ecc?: Ecc;
-	/** Whether a logo is placed over the code. Defaults to `logoAreaRatio > 0`. */
+	/** Whether a logo is placed over the code. Defaults to `logoCover > 0`. */
 	hasLogo?: boolean;
 	/** The distance the code needs to be read from, in metres. */
 	scanDistanceM?: number;
@@ -214,12 +222,12 @@ export function assess(input: SizingInput): Warning[] {
 		size,
 		quiet = 4,
 		fg = '#000000',
-		logoAreaRatio,
+		logoCover,
 		ecc = 'M',
 		scanDistanceM
 	} = input;
 	const bg = paperColor(input.bg);
-	const hasLogo = input.hasLogo ?? (logoAreaRatio ?? 0) > 0;
+	const hasLogo = input.hasLogo ?? (logoCover ?? 0) > 0;
 
 	const out: Warning[] = [];
 	const mm = moduleMm(widthMm, size, quiet);
@@ -306,19 +314,19 @@ export function assess(input: SizingInput): Warning[] {
 	}
 
 	// Logo.
-	if (logoAreaRatio !== undefined) {
-		const pct = Math.round(logoAreaRatio * 100);
-		if (logoAreaRatio > LOGO_BLOCK_RATIO) {
+	if (logoCover !== undefined) {
+		const pct = Math.round(logoCover * 100);
+		if (logoCover > LOGO_BLOCK_COVER) {
 			out.push({
 				level: 'block',
 				code: 'logo-size',
-				message: `The logo covers ${pct}% of the code, past the ${Math.round(LOGO_BLOCK_RATIO * 100)}% ceiling. Even error correction H will not survive that in print. Shrink the logo.`
+				message: `The logo hides ${pct}% of this code, past the ${Math.round(LOGO_BLOCK_COVER * 100)}% ceiling. Error correction H rebuilds about 30% in theory, and print leaves nothing spare. Shrink the logo.`
 			});
-		} else if (logoAreaRatio > LOGO_WARN_RATIO) {
+		} else if (logoCover > LOGO_WARN_COVER) {
 			out.push({
 				level: 'warn',
 				code: 'logo-size',
-				message: `The logo covers ${pct}% of the code. Above ${Math.round(LOGO_WARN_RATIO * 100)}% the error correction is doing all the work, so a smudge or a bad angle breaks the scan.`
+				message: `The logo hides ${pct}% of this code, so error correction is doing most of the work. Above ${Math.round(LOGO_WARN_COVER * 100)}% a smudge or a bad angle breaks the scan. Shrink the logo, or shorten the content so the code has more modules to spare.`
 			});
 		}
 	}

@@ -603,6 +603,144 @@ Added 2026-09-05. §8f keeps one design, the one being worked on. This keeps any
 - **Tests.** `apps/site/test/saved.test.ts` pins the file format, the refusals, and the names.
   IndexedDB itself is exercised in the browser, not in vitest.
 
+## 8h. The logo size that was not a size
+
+The logo controls said one thing and did another, found by rendering the logo path and measuring
+the library's own output rather than reading the code (2026-09-05, `docs/logo-plan.md` phase 1).
+
+- **The size slider was a coefficient, not a size.** `logoSize` went straight to
+  `@liquid-js/qr-code-styling` as `imageOptions.imageSize`, which is a coefficient of the
+  error-correction budget: the library multiplies it by the level's recovery fraction, decides how
+  many modules it is willing to hide, and cuts the largest odd-sided rectangle that fits. The
+  panel meanwhile reported `logoSize²` as "% area". On a short URL the top half of the slider did
+  nothing at all (0.35, 0.45 and 0.5 all produced the same five-module logo), the bottom end
+  produced a single module, and the 20% warning and 25% block fired on a number no render ever
+  produced.
+- **The size is now a width.** `Design.logoWidth` is the logo's width as a fraction of the code's
+  width, 10% to 32%, default 20%. `lib/logo-size.ts` is a port of the library's
+  `calculateImageSize` plus the budget arithmetic around it, so the hole can be predicted without
+  rendering; `fitLogo` searches the 100 coefficients for the one landing nearest the width asked
+  for. The port is pinned in `apps/site/test/logo-size.test.ts` by numbers read out of the
+  library's own SVG, and checked against 162 live renders (three code versions, three aspect
+  ratios, three margins, six widths) with no mismatch.
+- **The readout is the width reached, not the width asked for.** A hole is a whole odd number of
+  modules, so the reachable widths are a staircase: on a 33-module code they are 9%, 15%, 21%,
+  27% and 33% and nothing between. The slider moves smoothly and the readout steps. Basic shows
+  the width alone; Advanced adds "· hides n%".
+- **The warnings moved to cover.** `LOGO_WARN_COVER` (0.15) and `LOGO_BLOCK_COVER` (0.20) replace
+  the old area ratios, and measure hidden modules against the same budget the library rations, so
+  the number in the warning is the number the renderer acted on. H rebuilds about 30%, so the
+  warning leaves half that in hand and the block a third. The default width was chosen so the
+  densest case, a short URL on a version 3 code, does not open on a warning.
+- **"Clear space behind the logo" did nothing.** It set `imageOptions.fill`, which the library
+  only reads in `background` mode; in `center` mode the output was byte-identical either way. It
+  is now the mode itself: on cuts the modules out (`center`), off paints the logo over them
+  (`overlay`), which is what the switch and the scan matrix had been claiming. The library forces
+  the margin to nought in overlay, so the Margin slider is hidden there rather than lying too.
+- **Old designs.** `logoSize` left `PERSISTED` and `logoWidth` and `logoAspect` joined it, so a
+  saved design comes back at the new default width rather than at a mistranslated value.
+  `logoAspect` is measured from the picture itself by the Preview, so a design restored from a
+  file or an older record is right as soon as the picture decodes.
+
+## 8i. SVG logos
+
+Phase 2 of `docs/logo-plan.md`, built 2026-09-06. The renderer already inlined an SVG data URL as
+markup rather than an `<image>`, so the logo could stay vector all the way into the SVG download;
+what was missing was any reason to trust the file. An uploaded SVG is a document, not a picture.
+
+`lib/logo-svg.ts` rebuilds one before anything sees it, behind a dynamic import so it stays out of
+the generator's first chunk (2.8 KB gzipped on its own). What it guarantees:
+
+- **Inert.** Script, embedded HTML, animation elements, links, `on*` handlers, and every reference
+  that leaves the file are removed. The export matters most: a browser opening an SVG directly
+  runs its script, and the file goes to a print shop.
+- **Self-contained.** `<style>` rules are inlined onto the elements they match, then the block and
+  every `class` attribute go. SVG style rules are not scoped, so a block left in place would
+  restyle the site around the preview, and a logo carrying `class="hidden"` would vanish into the
+  site's own CSS. Matching uses the browser's selector engine, so an Illustrator export (`.cls-1`)
+  or a Figma one lands as its author drew it. This replaces the class-prefixing the plan proposed;
+  prefixing would have left the rules global.
+- **Sized.** A viewBox is guaranteed: the file's own, else one built from its width and height
+  converted to px, else measured with `getBBox` offscreen after sanitising, else refused. Without
+  one a browser calls an SVG 300 by 150, which is exactly how a square mark ended up in a hole cut
+  for a 2:1 picture with the art spilling over the modules. Contrary to the plan the root keeps a
+  `width` and `height` equal to the viewBox, so every browser reports the same intrinsic size; the
+  renderer overwrites both when it places the logo, so this only settles the measurement.
+- **Contained.** The drawing is wrapped in a group clipped to its viewBox, because the renderer
+  sets `overflow="visible"` on the logo it places and art running past its own box would otherwise
+  cross the modules.
+- **Scoped.** Every id and internal reference is prefixed `lg-`, so a logo carrying
+  `mask-dot-color` or Figma's `clip0` cannot shadow the renderer's.
+
+Anything changed is said plainly under the tile in the info style, not hidden: script removed,
+remote references removed, style rules that could not be carried, and live text, which falls back
+to whatever font the reader has.
+
+**The other way in.** A `.stoneqr.json` design file comes off the person's disk, so `SavedDesigns`
+rebuilds an SVG logo from one exactly as an upload, and `fromFile` refuses an SVG in the Photo QR
+slot, which resamples real pixels and has no use for markup. Uploads and this browser's own
+storage are the only other sources, and both have already been through the rebuild.
+
+**Tests.** The string helpers are in `apps/site/test/logo-svg.test.ts`. The DOM half needs a
+parser, the selector engine and layout, so `bun run logo-fixtures` runs it in a browser against
+`apps/site/test/fixtures/logos/`: Illustrator classes, Inkscape namespaces, Figma clip ids, no
+viewBox, art overflowing its box, a wordmark, live text, and a hostile file carrying a script, an
+`onload`, a phishing link, a tracking pixel, an `@import`, a `foreignObject`, and a clipPath named
+`mask-dot-color`. Each is prepared, checked for anything that can act or reach the network, then
+placed in a real code and decoded. Photo QR still refuses SVG, and now says why.
+
+## 8j. Photo QR in colour
+
+Planned 2026-09-06. The first part, Code and Background following through, was built the same
+day while closing section C of `docs/audit-2026-09-06.md`; the Shape colour is still to do. Found while auditing the logo work: the halftone renderer has
+taken `dark` and `light` colours since M5 (`HalftoneOptions` in
+`packages/engine/src/render/halftone.ts`, used for the dots, the function patterns, the quiet
+zone, and the silhouette's ink and paper), and `imageFilter` in `lib/halftone.ts` reproduces both
+in the two-layer SVG. Nothing on the site passes them. `Preview.svelte` builds the options
+without a colour, the PNG worker and the SVG download copy `design.halftoneOpts` from the
+preview and so inherit the gap, and `scripts/scan-sheets/page.ts` does the same. So Photo QR is
+always black on white whatever Code and Background say, and the seven built-in shapes, which
+exist only to be silhouettes, come out black every time. The Style panel's colours are the one
+setting that could have carried over into Photo QR, and they silently do not.
+
+The fix is in three parts, the first of which is a wiring change and the second of which is the
+"apply the colour wheel to the shapes" feature.
+
+- **Code and Background follow through.** `Preview.svelte` passes `dark` from `Design.fg` and
+  `light` from `Design.bg` through `hexToRgb` in `lib/colour.ts`. The worker, the
+  SVG export, the decode check, and the test sheet take the options from the preview, so one
+  change reaches every path, and the decode check verifies the coloured raster rather than a
+  black stand-in. Transparent background stays unavailable in Photo QR, as now: the raster has no
+  alpha and the picture has to sit on something. The Colours summary in the Style panel needs no
+  change, because the colours will finally mean what they say there.
+- **A colour for the shape.** In the Photo QR panel's Look group, under the Cut slider and only
+  while the tone is Silhouette, a `ColourField` labelled "Shape". It follows the Code colour until
+  one is picked, with the same "Match code" link the Corners field has, stored as
+  `Design.shapeColor`, null while following, added to `PERSISTED` so it survives a reload and
+  travels in share links and design files. The engine gains `HalftoneOptions.ink`, the colour a
+  silhouette's dark pixels become, defaulting to `dark`; it is read in `prepareSource` where the
+  cut is applied, and nowhere else, so the dots and the function patterns keep the code colour.
+  `imageFilter` gets the same option in its two-entry table, because the SVG filter must stay in
+  step with `prepareSource` (the rule in `CLAUDE.md`). The field is Basic, since the colour
+  picker is Basic; nothing new for `advancedInUse`. The seven shape tiles stay black, as they are
+  drawings of a choice, not previews.
+- **Contrast and the decode check.** A silhouette puts light dots on the shape and dark dots on
+  the paper, so a shape colour that reads as paper makes the shape vanish, and a mid-tone shape
+  greys out the light dots first (the weak point row G of the scan matrix already names). The
+  contrast badge and the red-light warning take the shape colour into account the way they take
+  the corner colour: the worst of shape against background and code against shape, through the
+  same `contrastRatio`, rather than a new rule. The decode check stays the gate, and the fallback
+  ladder in `halftoneWithFallback` (bigger dots, then a fade) already has the tools to rescue a
+  weak combination; its note should say when it did.
+
+Copy: the `/photo` paragraph that lists the built-in shapes says they are "already silhouettes"
+and gains "in any colour"; the panel summary names the shape colour when one is set, the way the
+Colours summary does. Tests: an engine test that `ink` recolours a silhouette's dark pixels and
+leaves the dots alone, the `imageFilter` table pinned against it, and the `persist.test.ts`
+defaults. Scan matrix: one new row, a coloured silhouette (a mid-blue heart on white at 30 mm)
+in section G, which joins the colour print already owed for L2 and L8. About an evening; the
+engine change is a dozen lines.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

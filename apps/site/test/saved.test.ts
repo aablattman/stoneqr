@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { suggestName, tidyName, toFile, fromFile, newId, FILE_SUFFIX } from '$lib/generator/saved';
 import { defaultFields } from '$lib/generator/state.svelte';
 import type { Saved } from '$lib/generator/persist';
+import { GLYPHS, glyphDataUrl, glyphName } from '$lib/glyphs';
 
 const record: Saved = { v: 1, fg: '#123456', fields: { url: { url: 'https://example.com/menu' } } };
 
@@ -42,7 +43,7 @@ describe('saved designs', () => {
 		expect(parsed.stoneqr).toBe(1);
 		expect('halftone' in parsed).toBe(false);
 		const back = fromFile(text);
-		expect(back).toEqual({ stoneqr: 1, name: 'Menu', type: 'url', record, logo: 'data:image/png;base64,AAAA' });
+		expect(back).toEqual({ stoneqr: 1, name: 'Menu', type: 'url', record, logo: 'data:image/png;base64,AAAA', notes: [] });
 		expect(FILE_SUFFIX).toBe('.stoneqr.json');
 	});
 
@@ -51,7 +52,34 @@ describe('saved designs', () => {
 		expect(fromFile('{"v":1}')).toBeNull();
 		expect(fromFile(JSON.stringify({ stoneqr: 1, record: { v: 2 } }))).toBeNull();
 		const loose = fromFile(JSON.stringify({ stoneqr: 1, type: 'bogus', record: { v: 1 }, logo: 'javascript:alert(1)', halftone: 'data:image/jpeg;base64,BBBB' }));
-		expect(loose).toEqual({ stoneqr: 1, name: 'Website', type: 'url', record: { v: 1 }, halftone: 'data:image/jpeg;base64,BBBB' });
+		expect(loose).toEqual({
+			stoneqr: 1, name: 'Website', type: 'url', record: { v: 1 }, halftone: 'data:image/jpeg;base64,BBBB',
+			notes: ['The logo in that file was left out. Use a PNG, JPEG, WebP, or SVG file.']
+		});
+	});
+
+	it('holds a file to the upload tiles\' limits and says what it left out', () => {
+		const big = 'data:image/png;base64,' + 'A'.repeat(3 * 1024 * 1024);
+		const opened = fromFile(JSON.stringify({ stoneqr: 1, record: { v: 1 }, logo: big, halftone: 'data:image/tiff;base64,CCCC' }));
+		expect(opened?.logo).toBeUndefined();
+		expect(opened?.halftone).toBeUndefined();
+		expect(opened?.notes).toEqual([
+			'The logo in that file was left out. Keep the logo under 2 MB. It only needs to be a few hundred pixels.',
+			'The Photo QR picture in that file was left out. Use a PNG, JPEG, or WebP. Photo QR resamples real pixels; an SVG goes on the logo instead.'
+		]);
+		// The same 3 MB is fine where the tile allows 8.
+		expect(fromFile(JSON.stringify({ stoneqr: 1, record: { v: 1 }, halftone: big }))?.halftone).toBe(big);
+	});
+
+	it('rebuilds a built-in shape from its name rather than taking the SVG in the file', () => {
+		const star = GLYPHS.find((g) => g.id === 'star')!;
+		const record: Saved = { v: 1, halftone: true, halftoneImageName: glyphName(star) };
+		// An SVG in the Photo QR slot is refused as markup, but the shape is restored from glyphs.ts.
+		const opened = fromFile(JSON.stringify({ stoneqr: 1, record, halftone: 'data:image/svg+xml;base64,PHN2Zy8+' }));
+		expect(opened?.halftone).toBe(glyphDataUrl(star));
+		expect(opened?.notes).toEqual([]);
+		// And a file that never carried the picture at all gets it back the same way.
+		expect(fromFile(JSON.stringify({ stoneqr: 1, record }))?.halftone).toBe(glyphDataUrl(star));
 	});
 
 	it('makes distinct ids', () => {

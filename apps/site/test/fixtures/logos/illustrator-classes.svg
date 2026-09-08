@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <style>
+      .cls-1 { fill: #1f6f63; }
+      .cls-2 { fill: #fff; }
+      .cls-3 { fill: url(#grad); }
+    </style>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a9d8f"/>
+      <stop offset="1" stop-color="#14514a"/>
+    </linearGradient>
+  </defs>
+  <circle class="cls-1" cx="60" cy="60" r="58"/>
+  <rect class="cls-3" x="18" y="18" width="84" height="10" rx="5"/>
+  <path class="cls-2" d="M42 46h36v9H64v34h-9V55H42z"/>
+</svg>

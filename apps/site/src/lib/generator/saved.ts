@@ -21,6 +21,8 @@
 import type { PayloadType } from '@stoneqr/engine/payloads';
 import { openDb, STORES, type Saved } from './persist';
 import type { Fields } from './state.svelte';
+import { GLYPHS, glyphDataUrl, glyphName } from '$lib/glyphs';
+import { dataUrlProblem } from './pictures';
 
 export type SavedDesign = {
 	id: string;
@@ -287,21 +289,45 @@ export function toFile(design: Pick<SavedDesign, 'name' | 'type' | 'record'>, pi
  * checked for its version here; `persist.apply` validates every field when it is opened, so a
  * hand-edited file cannot put a string where a number goes. Pictures must be image data URLs.
  */
-export function fromFile(text: string): DesignFile | null {
+/** A file read back, with anything it carried that was left out said in plain words. */
+export type OpenedFile = DesignFile & { notes: string[] };
+
+/**
+ * Read a design file. The record is applied through `apply`, which takes only what it
+ * understands. The pictures are held to the upload tiles' rules (`pictures.ts`): a picture the
+ * tile would refuse is left out and said so, rather than carried into the decode path and
+ * IndexedDB. Photo QR takes real pixels only, so an SVG in that slot is refused as markup, with
+ * one exception: a built-in shape is an SVG, and is rebuilt from `glyphs.ts` by its name in the
+ * record, never taken from the file. The logo slot may be an SVG, and the caller rebuilds it
+ * before it is used.
+ */
+export function fromFile(text: string): OpenedFile | null {
 	try {
 		const parsed = JSON.parse(text);
 		if (!parsed || typeof parsed !== 'object' || parsed.stoneqr !== 1) return null;
 		const p = parsed as Record<string, unknown>;
 		if (!p.record || typeof p.record !== 'object' || (p.record as Saved).v !== 1) return null;
 		const type = typeof p.type === 'string' && p.type in LABEL ? (p.type as PayloadType) : 'url';
-		const out: DesignFile = {
+		const record = p.record as Saved;
+		const out: OpenedFile = {
 			stoneqr: 1,
 			name: tidyName(typeof p.name === 'string' ? p.name : '') || LABEL[type],
 			type,
-			record: p.record as Saved
+			record,
+			notes: []
 		};
-		if (isPicture(p.logo)) out.logo = p.logo;
-		if (isPicture(p.halftone)) out.halftone = p.halftone;
+		if (typeof p.logo === 'string') {
+			const problem = dataUrlProblem('logo', p.logo);
+			if (problem) out.notes.push(`The logo in that file was left out. ${problem}`);
+			else out.logo = p.logo;
+		}
+		const shape = GLYPHS.find((g) => glyphName(g) === record.halftoneImageName);
+		if (shape) out.halftone = glyphDataUrl(shape);
+		else if (typeof p.halftone === 'string') {
+			const problem = dataUrlProblem('halftone', p.halftone);
+			if (problem) out.notes.push(`The Photo QR picture in that file was left out. ${problem}`);
+			else out.halftone = p.halftone;
+		}
 		return out;
 	} catch {
 		return null;

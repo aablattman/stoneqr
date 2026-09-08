@@ -30,10 +30,18 @@ export interface StyleOptions {
 	gradientTo: string;
 	gradientAngleDeg: number;
 	logo?: string; // data URL (raster), stays in the browser
-	logoSize: number; // fraction of code width, 0..0.5 (library semantics)
+	/**
+	 * The library's `imageOptions.imageSize`: a coefficient of the error-correction budget, not a
+	 * size. Work it out with `fitLogo` in `logo-size.ts` from the width the user asked for; do not
+	 * pass a fraction of the width here, which is what it looks like and is not.
+	 */
+	logoCoefficient: number;
+	/** True clears the modules under the logo; false paints it straight over them. */
 	logoKnockout: boolean;
-	logoMargin: number; // modules
+	logoMargin: number; // modules; the library ignores it when the logo is painted over
 	frame: { enabled: boolean; text: string; color: string; textColor: string };
+	/** Accessible name written as the SVG's `<title>`, as the plain renderer does. */
+	title?: string;
 }
 
 export interface StyledResult {
@@ -102,16 +110,20 @@ export async function renderStyled(opts: StyleOptions, widthMm: number): Promise
 		// background keeps the margin and makes the fill invisible instead of disabling the block.
 		backgroundOptions: { color: opts.bg === 'transparent' ? 'rgba(0,0,0,0)' : opts.bg, margin: opts.quietZone },
 		image: opts.logo,
+		// `center` cuts the modules out from under the logo; `overlay` paints it on top of them
+		// and forces the margin to zero. `imageOptions.fill` is not a knockout: the library only
+		// reads it in `background` mode, so setting it here did nothing at all.
 		imageOptions: {
-			mode: 'center',
-			imageSize: opts.logoSize,
-			margin: opts.logoMargin,
-			fill: { color: opts.logoKnockout ? (opts.bg === 'transparent' ? '#ffffff' : opts.bg) : 'rgba(0,0,0,0)' }
+			mode: opts.logoKnockout ? 'center' : 'overlay',
+			imageSize: opts.logoCoefficient,
+			margin: opts.logoMargin
 		}
 	});
 
 	let svg = (await qr.serialize()) ?? '';
 	if (!svg) throw new Error('Styled renderer produced no output');
+	// The library writes no <title>; the plain renderer and the bulk SVGs do, and a download should not lose its name for being styled.
+	if (opts.title) svg = svg.replace(/<svg\b[^>]*>/, (open) => `${open}<title>${escapeXml(opts.title!)}</title>`);
 	let scale = 1;
 	if (opts.frame.enabled) {
 		const framed = frameSvg(svg, opts);

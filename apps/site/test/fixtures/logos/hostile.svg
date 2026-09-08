@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100" onload="window.__pwned = 'root-onload'">
+  <script type="text/javascript">window.__pwned = 'script-tag';</script>
+  <defs>
+    <style>
+      @import url("https://evil.example/steal.css");
+      .brand { fill: #d62828; }
+      .hidden { display: block; }
+      rect { filter: url(https://evil.example/track.svg#f); }
+    </style>
+    <clipPath id="mask-dot-color"><rect x="0" y="0" width="100" height="100"/></clipPath>
+  </defs>
+  <a href="https://evil.example/phish"><rect class="brand" x="5" y="5" width="90" height="90" rx="12"/></a>
+  <image href="https://evil.example/beacon.png" x="0" y="0" width="10" height="10"/>
+  <use xlink:href="https://evil.example/other.svg#thing"/>
+  <foreignObject x="0" y="0" width="100" height="100"><body xmlns="http://www.w3.org/1999/xhtml"><img src="x" onerror="window.__pwned='fo'"/></body></foreignObject>
+  <circle cx="50" cy="50" r="28" fill="#fff" onclick="window.__pwned='onclick'">
+    <animate attributeName="r" from="10" to="40" dur="2s" onbegin="window.__pwned='animate'"/>
+  </circle>
+  <path d="M35 50h30v8H35z" fill="#003049" clip-path="url(#mask-dot-color)"/>
+</svg>

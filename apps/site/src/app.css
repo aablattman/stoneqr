@@ -868,6 +868,11 @@ a:hover {
 	text-transform: uppercase;
 	line-height: 1.1;
 	text-align: center;
+	/* A word longer than the tile shows an ellipsis inside the box, never letters outside it. */
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 /*

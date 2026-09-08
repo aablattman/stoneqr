@@ -167,6 +167,12 @@ export function encodePng(image: RasterImage, opts: { dpi?: number } = {}): Uint
 	return out;
 }
 
+/** The SVG renderer's spelling of no background, accepted here so one design value serves both. */
+export function isTransparent(colour: string | undefined): boolean {
+	const s = colour?.trim().toLowerCase();
+	return s === 'transparent' || s === 'none';
+}
+
 /** Parse `#rgb`, `#rrggbb`, or the words black/white into an RGB triple. */
 export function parseRgb(colour: string | undefined, fallback: [number, number, number]): [number, number, number] {
 	if (!colour) return fallback;
@@ -195,7 +201,7 @@ export interface PngExportOptions {
 	quietZone?: number;
 	/** Dark colour, hex. Default '#000000'. */
 	fg?: string;
-	/** Light colour, hex. Default '#ffffff'. */
+	/** Light colour, hex, or 'transparent' for a PNG with no background. Default '#ffffff'. */
 	bg?: string;
 }
 
@@ -226,11 +232,13 @@ export function exportPng(
 	const pxPerModule = Math.max(1, Math.floor(requestedPx / total));
 	const widthPx = pxPerModule * total;
 
+	const transparent = isTransparent(opts.bg);
 	const image = rasterize(qr, {
 		pxPerModule,
 		quietZone: quiet,
 		fg: parseRgb(opts.fg, [0, 0, 0]),
-		bg: parseRgb(opts.bg, [255, 255, 255])
+		bg: transparent ? [255, 255, 255] : parseRgb(opts.bg, [255, 255, 255]),
+		transparent
 	});
 
 	// The DPI that reproduces the requested physical width from the actual pixel count.
