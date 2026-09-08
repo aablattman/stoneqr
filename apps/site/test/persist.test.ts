@@ -13,7 +13,7 @@ function fake(): Design {
 		logoName: '', logoWidth: 0.2, logoAspect: 1, logoKnockout: true, logoMargin: 1,
 		frameEnabled: false, frameText: 'Scan me', frameColor: '#000000', frameTextColor: '#ffffff',
 		halftone: false, halftoneImageName: '', halftoneDotScale: 0.4, halftoneDim: 0, halftoneGrayscale: false,
-		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,
+		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, shapeColor: null, halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,
 		shortUrl: null,
 		fields: defaultFields()
 	} as unknown as Design;
@@ -85,17 +85,19 @@ describe('persist', () => {
 
 	it('holds null-default fields to the same limits and colours to hex', () => {
 		const b = fake();
-		const bad = { v: 1, cornerColor: 'x'.repeat(30000), shortUrl: 'y'.repeat(30000), scanDistanceM: Infinity, fg: 'red', bg: '#12345', gradientTo: 'url(#x)' } as unknown as Saved;
+		const bad = { v: 1, cornerColor: 'x'.repeat(30000), shapeColor: 'teal', shortUrl: 'y'.repeat(30000), scanDistanceM: Infinity, fg: 'red', bg: '#12345', gradientTo: 'url(#x)' } as unknown as Saved;
 		expect(apply(b, bad)).toBe(true);
 		expect(b.cornerColor).toBeNull();
+		expect(b.shapeColor).toBeNull();
 		expect(b.shortUrl).toBeNull();
 		expect(b.scanDistanceM).toBeNull();
 		expect(b.fg).toBe('#000000');
 		expect(b.bg).toBe('#ffffff');
 		expect(b.gradientTo).toBe('#1f6f63');
-		const good = { v: 1, cornerColor: '#ABC', shortUrl: 'https://s.example/x', scanDistanceM: 2.5, fg: '#123456', frameColor: '#fff' } as Saved;
+		const good = { v: 1, cornerColor: '#ABC', shapeColor: '#1f6f63', shortUrl: 'https://s.example/x', scanDistanceM: 2.5, fg: '#123456', frameColor: '#fff' } as Saved;
 		expect(apply(b, good)).toBe(true);
 		expect(b.cornerColor).toBe('#ABC');
+		expect(b.shapeColor).toBe('#1f6f63');
 		expect(b.shortUrl).toBe('https://s.example/x');
 		expect(b.scanDistanceM).toBe(2.5);
 		expect(b.fg).toBe('#123456');

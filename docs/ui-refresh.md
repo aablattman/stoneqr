@@ -753,6 +753,51 @@ defaults. Scan matrix: one new row, a coloured silhouette (a mid-blue heart on w
 in section G, which joins the colour print already owed for L2 and L8. About an evening; the
 engine change is a dozen lines.
 
+### 8j (built). What the shape colour turned out to be
+
+Built 2026-09-07. The wiring above landed as written; the rules around it did not, because the
+measurement contradicted the plan.
+
+- **The engine.** `HalftoneOptions.ink`, resolved by `withDefaults` to `dark` when unset, read in
+  `prepareSource` at the cut and nowhere else. The dots and the function patterns are untouched,
+  which an engine test pins by sampling a dark data module's corner (the shape) and its centre
+  (the dot) and finding two different colours. `imageFilter` takes the same option, and rather
+  than pinning it against numbers typed into a test it is pinned against `prepareImage` itself,
+  so the SVG filter and the raster cannot drift.
+- **The control.** `Design.shapeColor`, null while it follows the code colour, with `shapeFg` as
+  the bindable pair, exactly as `cornerColor`/`cornerFg` work. In `PERSISTED`, and in both
+  `COLOUR_KEYS` and `NULLABLE` in `persist.ts`, so a share link cannot put `teal` in it. A
+  `ColourField` labelled "Shape" under the Cut, only while the tone is Silhouette, Basic, with
+  the "Match code" link. The panel summary gains "Shape colour". The seven tiles stay black.
+
+**The shape colour does not put a scan at risk, and the plan assumed it did.** Before choosing a
+threshold, a heart silhouette was rendered at every grey from 0 to 255 as the shape colour, black
+code on white, and decode-checked: all eighteen samples decoded, including a shape the same colour
+as the code. The reason is in the renderer — the dots are painted over the picture at full
+strength, so the module pattern survives whatever happens between them. §8j had said a mid-tone
+shape "greys out the light dots first" and that the badge should take it; on our own evidence it
+does not, and two things follow.
+
+- **It is not in the contrast badge.** That badge is the code's print-safety. A silhouette in the
+  site's own accent teal scores 3.5:1 on the worst shape pair, so folding it in would have flipped
+  a plainly print-safe black-on-white code to "Low contrast" on evidence we do not have. The badge
+  was left alone; the shape has its own notice in its own panel.
+- **It is judged at 3:1, not `CONTRAST_MIN`.** Under a black code on white, clearing 4:1 on both
+  pairs needs the shape between about 0.15 and 0.21 relative luminance — a band so narrow that
+  almost nothing lands in it, the accent teal included. A warning that fires on nearly every
+  choice teaches people to ignore it. So `SHAPE_CONTRAST_MIN` is 3, which is what WCAG 1.4.11 asks
+  of a graphical object, and the notice is worded as appearance ("it will read as one solid blob",
+  "it will barely show") rather than as a scan risk. It names which of the two pairs failed,
+  because they need opposite advice. The decode check remains the gate.
+
+`shapeContrast` returns a ratio and which pair is worse, not a colour, because "code against
+shape" is not a foreground against paper and cannot be folded into `weakestForeground`.
+
+**What a phone still owes.** All of the above is the synthetic decoder on a clean raster. Whether
+a mid-tone shape costs anything on paper at 30 mm is row `G3` of `docs/scan-matrix.md`: a heart in
+`#3a6fc4`, where the light dots inside the shape are 4.9:1 against it rather than the 21:1 they
+get inside black ink. It needs the colour print already owed for L2 and L8.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

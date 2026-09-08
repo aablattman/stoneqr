@@ -22,6 +22,13 @@ export interface HalftoneOptions {
 	dark?: [number, number, number];
 	/** RGB 0..255 for light modules and the quiet zone. Default white. */
 	light?: [number, number, number];
+	/**
+	 * RGB 0..255 a silhouette's dark pixels become. Defaults to `dark`, so a silhouette is the
+	 * code's own colour unless asked otherwise. Read only where the cut is applied, never by the
+	 * dots or the function patterns, so colouring the shape never touches what a scanner reads.
+	 * Ignored when `threshold` is unset, because there is no silhouette to colour.
+	 */
+	ink?: [number, number, number];
 	/** 0..1: how far to fade the image toward the light colour. Default 0. */
 	imageDim?: number;
 	/** Desaturate the image first. Default false. */
@@ -328,6 +335,7 @@ function withDefaults(o: HalftoneOptions): Resolved {
 		dotScale: clamp(o.dotScale ?? 0.4, DOT_SCALE_MIN, DOT_SCALE_MAX),
 		dark: o.dark ?? [0, 0, 0],
 		light: o.light ?? [255, 255, 255],
+		ink: o.ink ?? o.dark ?? [0, 0, 0],
 		imageDim: clamp(o.imageDim ?? 0, 0, 1),
 		grayscale: o.grayscale ?? false,
 		contrast: clamp(o.contrast ?? 1, 0.5, 2),
@@ -369,7 +377,8 @@ function prepareSource(image: RasterImage, o: Resolved): Uint8ClampedArray {
 	const channels = image.data.length >= n * 4 ? 4 : 3;
 	const out = new Uint8ClampedArray(n * 3);
 	const [lr, lg, lb] = o.light;
-	const [dr, dg, db] = o.dark;
+	// The cut is the only place the shape's own colour applies; everything else keeps `dark`.
+	const [dr, dg, db] = o.ink;
 	const cut = o.threshold;
 	// A silhouette is a luminance decision, so it always goes through grey first.
 	const gray = o.grayscale || cut !== undefined;

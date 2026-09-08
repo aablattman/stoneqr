@@ -59,6 +59,8 @@
 			grayscale: design.halftoneGrayscale,
 			contrast: design.halftoneContrast,
 			threshold: design.halftoneSilhouette ? design.halftoneThreshold : undefined,
+			// Only the shape takes this; the engine ignores it when there is no cut to apply.
+			ink: hexToRgb(design.shapeFg),
 			imageZoom: design.halftoneZoom,
 			imageOffsetX: design.halftoneOffsetX,
 			imageOffsetY: design.halftoneOffsetY

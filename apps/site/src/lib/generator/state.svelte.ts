@@ -150,6 +150,12 @@ export class Design {
 	 */
 	halftoneSilhouette = $state(false);
 	halftoneThreshold = $state(THRESHOLD_DEFAULT);
+	/**
+	 * The colour a silhouette's shape is filled with, or null while it follows the code colour,
+	 * exactly as `cornerColor` follows it. Only the shape takes this: the dots and the function
+	 * patterns stay the code colour, so choosing it can never change what a scanner reads.
+	 */
+	shapeColor = $state<string | null>(null);
 	/** Picture zoom relative to cover-fit (1 fills the data area) and its position as a fraction of the area. */
 	halftoneZoom = $state(1);
 	halftoneOffsetX = $state(0);
@@ -203,6 +209,14 @@ export class Design {
 	}
 	set cornerFg(c: string) {
 		this.cornerColor = c;
+	}
+
+	/** The shape's effective colour: the override, else the code colour. Bindable from a colour field. */
+	get shapeFg(): string {
+		return this.shapeColor ?? this.fg;
+	}
+	set shapeFg(c: string) {
+		this.shapeColor = c;
 	}
 
 	/** The background the renderers and the sizing rules see: the SVG renderer's word for none when transparent. */

@@ -38,7 +38,7 @@ export const PERSISTED = [
 	'logoName', 'logoWidth', 'logoAspect', 'logoKnockout', 'logoMargin',
 	'frameEnabled', 'frameText', 'frameColor', 'frameTextColor',
 	'halftone', 'halftoneImageName', 'halftoneDotScale', 'halftoneDim', 'halftoneGrayscale',
-	'halftoneContrast', 'halftoneSilhouette', 'halftoneThreshold', 'halftoneZoom', 'halftoneOffsetX', 'halftoneOffsetY',
+	'halftoneContrast', 'halftoneSilhouette', 'halftoneThreshold', 'shapeColor', 'halftoneZoom', 'halftoneOffsetX', 'halftoneOffsetY',
 	'shortUrl'
 ] as const satisfies readonly (keyof Design)[];
 type PersistedKey = (typeof PERSISTED)[number];
@@ -118,10 +118,10 @@ const ALLOWED: Partial<Record<PersistedKey, ReadonlySet<string>>> = {
 };
 
 /** The keys that hold a colour. The pickers always write `#rrggbb`; a short form is let through, anything else is not a colour. */
-const COLOUR_KEYS: ReadonlySet<PersistedKey> = new Set(['fg', 'bg', 'cornerColor', 'gradientTo', 'frameColor', 'frameTextColor']);
+const COLOUR_KEYS: ReadonlySet<PersistedKey> = new Set(['fg', 'bg', 'cornerColor', 'shapeColor', 'gradientTo', 'frameColor', 'frameTextColor']);
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 /** The keys whose default is null, and the type they take when set. */
-const NULLABLE: Partial<Record<PersistedKey, 'number' | 'string'>> = { scanDistanceM: 'number', cornerColor: 'string', shortUrl: 'string' };
+const NULLABLE: Partial<Record<PersistedKey, 'number' | 'string'>> = { scanDistanceM: 'number', cornerColor: 'string', shapeColor: 'string', shortUrl: 'string' };
 
 /**
  * Nullable keys accept null; enumerated keys must be one of their words; colours must be hex;

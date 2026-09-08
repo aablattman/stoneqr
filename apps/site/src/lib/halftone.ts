@@ -150,7 +150,9 @@ export function imageFilter(opts: HalftoneOptions): { defs: string; attr: string
 		// Contrast first, then a near-vertical ramp at the cut so every pixel lands on 0 or 1, then a
 		// two-entry table that maps 0 to the ink colour and 1 to the paper colour. The fade is folded
 		// into the table: the ink end moves toward paper, exactly as the engine fades a silhouette.
-		const dark = opts.dark ?? [0, 0, 0];
+		// The ink end is `ink`, defaulting to `dark`, the same fallback `withDefaults` applies, because
+		// this table is the SVG's copy of what `prepareSource` does at the cut.
+		const dark = opts.ink ?? opts.dark ?? [0, 0, 0];
 		const light = opts.light ?? [255, 255, 255];
 		const contrastStage = contrast === 1 ? '' : linear(num(contrast), num((128 - 128 * contrast) / 255));
 		const cutStage = linear(String(SVG_THRESHOLD_SLOPE), num(0.5 - SVG_THRESHOLD_SLOPE * cut));

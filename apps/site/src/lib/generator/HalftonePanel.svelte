@@ -9,6 +9,7 @@
 		THRESHOLD_MIN
 	} from '@stoneqr/engine';
 	import { GLYPHS, glyphDataUrl, glyphName, glyphSvg, type Glyph } from '$lib/glyphs';
+	import ColourField from '$lib/components/ColourField.svelte';
 	import CropBox from '$lib/components/CropBox.svelte';
 	import DropTile from '$lib/components/DropTile.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
@@ -17,6 +18,7 @@
 	import ToneArt from '$lib/components/ToneArt.svelte';
 	import type { Design, HalftoneTone } from './state.svelte';
 	import { pictureFileProblem } from './pictures';
+	import { shapeContrast, SHAPE_CONTRAST_MIN } from './contrast';
 
 	const TONES: { id: HalftoneTone; label: string }[] = [
 		{ id: 'colour', label: 'Colour' },
@@ -41,7 +43,31 @@
 	const summary = $derived.by(() => {
 		if (!design.halftoneImage) return '';
 		const tone = TONES.find((t) => t.id === design.halftoneTone)?.label ?? '';
-		return [design.halftoneImageName, design.halftone ? tone : 'off'].filter(Boolean).join(' · ');
+		// A shape colour is invisible once the panel is folded, so the summary says it is set.
+		const shape = design.halftone && design.halftoneSilhouette && design.shapeColor ? 'Shape colour' : '';
+		return [design.halftoneImageName, design.halftone ? tone : 'off', shape].filter(Boolean).join(' · ');
+	});
+
+	/** The other colours in this design, offered in the picker's swatch row, as the Style panel does. */
+	const related = $derived(
+		[design.fg, design.bg, design.cornerColor].filter((c): c is string => typeof c === 'string' && c.startsWith('#'))
+	);
+
+	/**
+	 * Whether the shape will be hard to make out. Deliberately about appearance and not about
+	 * scanning: the dots are painted over the picture at full strength, so the shape colour does
+	 * not put a scan at risk (measured; see `SHAPE_CONTRAST_MIN`), and the decode check is the
+	 * gate either way. Silent while the shape follows the code colour, because then it is the
+	 * code colour and the Colours badge already covers it.
+	 */
+	const shapeWarning = $derived.by(() => {
+		if (!design.halftoneSilhouette || design.shapeColor === null) return '';
+		const { ratio, worst } = shapeContrast(design.fg, design.shapeFg, design.bgColor);
+		if (ratio >= SHAPE_CONTRAST_MIN) return '';
+		// The two failures need opposite advice, so the rule says which one this is.
+		return worst === 'background'
+			? 'The shape is close to the background colour, so it will barely show. Move it away from the background, or pick a lighter background.'
+			: 'The shape is close to the code colour, so it will read as one solid blob rather than a shape. Move it away from the code colour.';
 	});
 
 	let imageError = $state('');
@@ -188,6 +214,21 @@
 						endLabel="Ink"
 						format={advanced ? pct : () => ''}
 					/>
+					<!-- Under the Cut and only while the tone is Silhouette, because there is no shape to
+					     colour otherwise. Follows the code colour until one is picked, exactly as Corners
+					     does, so the built-in shapes stop being black by default. -->
+					<ColourField label="Shape" bind:value={design.shapeFg} {related}>
+						{#snippet end()}
+							{#if design.shapeColor !== null}
+								<button type="button" class="text-xs text-ink-3 underline hover:text-ink" onclick={() => (design.shapeColor = null)}>Match code</button>
+							{:else}
+								<span class="text-xs text-ink-3">Same as code</span>
+							{/if}
+						{/snippet}
+					</ColourField>
+					{#if shapeWarning}
+						<p class="notice notice-info">{shapeWarning}</p>
+					{/if}
 					<p class="hint">
 						A silhouette turns the picture into solid blocks of ink and paper: right for a logo or a shape, wrong for a
 						photo. Drag toward Ink if parts of the shape are missing, toward Paper if the background fills in.

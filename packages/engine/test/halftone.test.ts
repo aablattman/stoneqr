@@ -274,6 +274,51 @@ describe('silhouette threshold', () => {
 		expect(midtones(r, dark, light)).toBeLessThan((qr.size * px) ** 2 * 0.05);
 	});
 
+	it('paints only the shape with `ink`, leaving the dots the code colour', () => {
+		// A source that is dark everywhere, so the whole picture falls below the cut and every
+		// picture pixel is the shape. The dots are then the only thing that can differ.
+		const side = 64;
+		const black: RasterImage = { width: side, height: side, data: new Uint8ClampedArray(side * side * 4).fill(0) };
+		for (let i = 3; i < side * side * 4; i += 4) black.data[i] = 255;
+		const ink: [number, number, number] = [31, 111, 99];
+		const r = renderHalftone(qr, black, { pxPerModule: px, quietZone: quiet, threshold: 0.5, ink });
+
+		let checked = 0;
+		for (let my = 10; my < qr.size - 10 && checked < 5; my++) {
+			for (let mx = 10; mx < qr.size - 10 && checked < 5; mx++) {
+				// A dark data module: its dot is painted, and the picture shows around it.
+				if (qr.functionMask[my]![mx] === true || qr.matrix[my]![mx] !== true) continue;
+				const x = (mx + quiet) * px;
+				const y = (my + quiet) * px;
+				expect(pixel(r, x, y)).toEqual(ink); // the shape, at the module's corner
+				expect(isBlack(pixel(r, x + px / 2, y + px / 2))).toBe(true); // the dot, at its centre
+				checked++;
+			}
+		}
+		expect(checked).toBe(5);
+		// The quiet zone is the light colour throughout: `ink` never reaches it.
+		expect(isWhite(pixel(r, 2, 2))).toBe(true);
+	});
+
+	it('defaults `ink` to the code colour, and ignores it without a cut', () => {
+		const dark: [number, number, number] = [20, 40, 80];
+		const ink: [number, number, number] = [200, 30, 30];
+		// No `ink`: the shape is `dark`, as it was before the option existed.
+		const plain = renderHalftone(qr, gradient(), { pxPerModule: px, quietZone: quiet, threshold: 0.5, dark });
+		expect(midtones(plain, dark)).toBeLessThan((qr.size * px) ** 2 * 0.05);
+		// `ink` with no cut: there is no silhouette to colour, so the raster is untouched.
+		const soft = renderHalftone(qr, gradient(), { pxPerModule: px, quietZone: quiet, dark });
+		const softInked = renderHalftone(qr, gradient(), { pxPerModule: px, quietZone: quiet, dark, ink });
+		expect(softInked.data).toEqual(soft.data);
+	});
+
+	it('carries `ink` through the fallback ladder, resolved to `dark` when unset', () => {
+		const ink: [number, number, number] = [31, 111, 99];
+		expect(halftoneWithFallback(qr, gradient(), PAYLOAD, { threshold: 0.5, ink }).opts.ink).toEqual(ink);
+		const dark: [number, number, number] = [20, 40, 80];
+		expect(halftoneWithFallback(qr, gradient(), PAYLOAD, { threshold: 0.5, dark }).opts.ink).toEqual(dark);
+	});
+
 	it('fades a silhouette toward the light colour so the ladder can still soften it', () => {
 		const hard = renderHalftone(qr, gradient(), { pxPerModule: px, quietZone: quiet, threshold: 0.5 });
 		const faded = renderHalftone(qr, gradient(), { pxPerModule: px, quietZone: quiet, threshold: 0.5, imageDim: 0.5 });

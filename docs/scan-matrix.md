@@ -93,14 +93,17 @@ The frame sits outside the quiet zone; the print width is the code, the artwork 
 
 Picture used on 2026-09-05: painted stand-in, printed in greyscale on a black-and-white laser. The Photo QR decode geometry does not depend on hue, but a colour print of a real photo is still owed.
 
-## G. Silhouette: built-in WiFi shape, cut 50%
+## G. Silhouette: built-in shapes, cut 50%
 
 A silhouette puts most of the dark modules inside solid ink regions, where only the light dots carry information; blur or a small print turns those dots grey first.
+
+G3 is the first row with a shape colour of its own (M14). Only the ink between the dots changes: the dots stay the code colour, so what is being asked is what a mid-tone shape costs the light dots that sit in it. White on that blue is 4.9:1, where white on black is 21:1. The synthetic decoder is no help here — it decoded a silhouette at every grey from 0 to 255, including a shape the same colour as the code — so a phone is the only thing that can answer it. Needs a colour print.
 
 | ID | Size | Software | iPhone | Android | Google Lens | Notes |
 |---|---|---|---|---|---|---|
 | G1 | 30 mm | ✅ | – | ✅ | – | light dots inside the ink arcs are the weak point |
 | G2 | 50 mm | ✅ | – | ✅ | – | |
+| G3 | 30 mm | ✅ | – | – | – | heart in `#3a6fc4`, dots black; untested on a phone, needs a colour print |
 
 ## H. Silhouette from a logo with a coloured background
 

@@ -186,9 +186,17 @@ const SECTIONS: Section[] = [
 	},
 	{
 		code: 'G',
-		title: 'Silhouette: built-in WiFi shape, cut 50%',
-		watch: 'Light dots inside the solid ink arcs are the weak point; a small print turns them grey first.',
-		items: [halftone('G1', 30, 'Silhouette WiFi 30 mm', { glyph: 'wifi' }, { threshold: 0.5 }), halftone('G2', 50, 'Silhouette WiFi 50 mm', { glyph: 'wifi' }, { threshold: 0.5 })]
+		title: 'Silhouette: built-in shapes, cut 50%',
+		watch:
+			'Light dots inside the solid ink arcs are the weak point; a small print turns them grey first. ' +
+			'G3 asks what a shape colour costs those dots: white on that blue is 4.9:1, where white on black is 21:1.',
+		items: [
+			halftone('G1', 30, 'Silhouette WiFi 30 mm', { glyph: 'wifi' }, { threshold: 0.5 }),
+			halftone('G2', 50, 'Silhouette WiFi 50 mm', { glyph: 'wifi' }, { threshold: 0.5 }),
+			// M14: the first row with a shape colour of its own. The dots stay black, so only the
+			// ink between them changes, which is exactly the variable this section is about.
+			halftone('G3', 30, 'Silhouette Heart in blue 30 mm', { glyph: 'heart' }, { threshold: 0.5, ink: [58, 111, 196] })
+		]
 	},
 	{
 		code: 'H',

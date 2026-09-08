@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { encode, halftoneVersionFor } from '@stoneqr/engine';
+import { encode, halftoneVersionFor, prepareImage, type RasterImage } from '@stoneqr/engine';
 import { halftoneToSvg, imageFilter, SVG_THRESHOLD_SLOPE } from '$lib/halftone';
 import { GLYPHS, glyphDataUrl, glyphSvg } from '$lib/glyphs';
 
@@ -11,6 +11,15 @@ import { GLYPHS, glyphDataUrl, glyphSvg } from '$lib/glyphs';
 const PAYLOAD = 'https://stoneqr.app/photo';
 const qr = encode(PAYLOAD, { ecc: 'H', minVersion: halftoneVersionFor(PAYLOAD) });
 const pixel = 'data:image/png;base64,iVBORw0KGgo=';
+
+/** The first entry of each channel's two-entry table: the colour the shape is painted. */
+function inkEnd(defs: string): number[] {
+	return ['R', 'G', 'B'].map((c) => {
+		const m = defs.match(new RegExp(`<feFunc${c} type="table" tableValues="([-\\d.]+) `));
+		if (!m) throw new Error(`no ${c} table in ${defs}`);
+		return Number(m[1]);
+	});
+}
 
 describe('imageFilter', () => {
 	it('is absent for an untouched colour picture', () => {
@@ -46,6 +55,30 @@ describe('imageFilter', () => {
 		// Contrast stage present, before the cut.
 		expect(f.defs.match(/<feComponentTransfer>/g)).toHaveLength(3);
 		expect(f.defs.indexOf('slope="1.5"')).toBeLessThan(f.defs.indexOf(`slope="${SVG_THRESHOLD_SLOPE}"`));
+	});
+
+	it('takes the shape colour from `ink`, and falls back to `dark` as the engine does', () => {
+		const ink: [number, number, number] = [31, 111, 99];
+		const f = imageFilter({ threshold: 0.5, dark: [0, 0, 0], light: [255, 255, 255], ink });
+		expect(inkEnd(f.defs)).toEqual(ink.map((c) => Number((c / 255).toFixed(4))));
+		// No `ink`: the table stays on `dark`, the behaviour before the option existed.
+		expect(inkEnd(imageFilter({ threshold: 0.5, dark: [0, 0, 255], light: [255, 255, 255] }).defs)).toEqual([0, 0, 1]);
+	});
+
+	it('puts the same colour in the shape as the engine does', () => {
+		// The filter is the SVG's copy of what `prepareSource` does at the cut, so the two are
+		// pinned against each other rather than against numbers typed here. A source that is dark
+		// everywhere falls entirely below the cut, so every prepared pixel is the shape.
+		const side = 4;
+		const data = new Uint8ClampedArray(side * side * 4);
+		for (let i = 3; i < data.length; i += 4) data[i] = 255;
+		const src: RasterImage = { width: side, height: side, data };
+		for (const ink of [[31, 111, 99], [168, 85, 27], [255, 255, 255]] as [number, number, number][]) {
+			const opts = { threshold: 0.5, dark: [0, 0, 0] as [number, number, number], light: [255, 255, 255] as [number, number, number], ink };
+			const painted = prepareImage(src, opts);
+			const engine = [painted.data[0], painted.data[1], painted.data[2]];
+			expect(inkEnd(imageFilter(opts).defs).map((v) => Math.round(v * 255))).toEqual(engine);
+		}
 	});
 
 	it('clamps the cut to the engine range', () => {
