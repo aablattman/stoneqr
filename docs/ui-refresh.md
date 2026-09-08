@@ -798,6 +798,49 @@ a mid-tone shape costs anything on paper at 30 mm is row `G3` of `docs/scan-matr
 `#3a6fc4`, where the light dots inside the shape are 4.9:1 against it rather than the 21:1 they
 get inside black ink. It needs the colour print already owed for L2 and L8.
 
+### 8k. The shape colour, corrected
+
+Same day, from a bug report: set a gradient, then pick a built-in shape, and the shape came out
+in the gradient's colour — with the Style panel greyed out, so it could not be taken back without
+removing the picture first. Three separate faults behind one symptom, and two of the rules written
+in §8j above turned out to be wrong.
+
+- **The shape colour no longer follows the code colour.** It was modelled on `cornerColor`: null
+  until picked, falling back to `fg`. But a corner colour follows the code because corners *are*
+  code, and a silhouette is not; all the fallback did was let an unrelated setting reach in. With
+  a gradient the reach was invisible, because the colour arriving at the shape had been chosen as
+  one end of a gradient the halftone renderer ignores. `Design.shapeColor` is now a plain colour
+  with its own default of black, its own memory, and no link to anything. The "Match code" link
+  is gone; there is nothing to match. It is out of `NULLABLE` and stays in `COLOUR_KEYS`.
+- **Code and Background are promoted out of the fieldset a photo disables.** They are the only two
+  settings that mean the same thing whichever renderer is in charge — since the audit wired them
+  through, they colour the picture's dots and its paper — yet they sat inside the disabled block,
+  in force but unreachable, under a notice that said colours "come back when you remove the
+  photo". The notice was simply false. The fieldset boundary now sits below them: Corners, the
+  transparent toggle, Fill, the shapes, the logo, and the frame are disabled by a photo, and Code
+  and Background stay live. Transparent no longer locks the Background field while a photo is on,
+  and the picture sits on the chosen background rather than a forced white, so the live field
+  means something.
+- **The "code against shape" warning was wrong and is gone.** §8j had it warn when the shape
+  approached the code colour. That is the classic silhouette: solid ink with the light dots
+  punched through it, which is the entire point of the built-in shapes. `shapeContrast` now
+  checks one pair, the shape against the paper, which is the only way a shape can fail — by
+  disappearing into it. Still at `SHAPE_CONTRAST_MIN`, still appearance rather than scanning.
+
+**What the ladder measured.** Decoupling makes one new combination reachable, and it was measured
+rather than reasoned about: a shape much darker than the code colour. A black heart under an
+orange `#a8551b` code drives `halftoneWithFallback` to its last rung — largest dots and a 40%
+fade — where the same heart under a black code is clean at the first attempt. Every combination
+still decoded; the cost is picture quality, not a failed scan. A grey sweep against that orange
+code puts the cliff at roughly 0.05 relative luminance: greys 0 to 60 need rescuing, 70 and above
+are clean, and every shape *lighter* than the code is clean however far apart they are. The
+asymmetry is the polarity: a shape darker than its own dark dots inverts the local pattern.
+
+No new predictive rule was added for it. The fallback ladder already detects it by decoding, says
+so in plain words ("The picture is faint at this setting"), and is per-design rather than a
+guessed threshold — and now that Code is editable with the picture in place, the fix is one field
+away.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

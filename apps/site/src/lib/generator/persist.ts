@@ -121,7 +121,7 @@ const ALLOWED: Partial<Record<PersistedKey, ReadonlySet<string>>> = {
 const COLOUR_KEYS: ReadonlySet<PersistedKey> = new Set(['fg', 'bg', 'cornerColor', 'shapeColor', 'gradientTo', 'frameColor', 'frameTextColor']);
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
 /** The keys whose default is null, and the type they take when set. */
-const NULLABLE: Partial<Record<PersistedKey, 'number' | 'string'>> = { scanDistanceM: 'number', cornerColor: 'string', shapeColor: 'string', shortUrl: 'string' };
+const NULLABLE: Partial<Record<PersistedKey, 'number' | 'string'>> = { scanDistanceM: 'number', cornerColor: 'string', shortUrl: 'string' };
 
 /**
  * Nullable keys accept null; enumerated keys must be one of their words; colours must be hex;

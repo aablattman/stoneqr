@@ -176,18 +176,18 @@
 	<div id="style-body" class="mt-4 grid gap-5">
 		{#if off}
 			<p class="notice notice-info">
-				The photo replaces these settings. Colours, shapes, the logo, and the frame come back when you remove the photo
-				or untick "Blend the picture into the code".
+				Code and Background still apply: they colour the picture's dots and its paper. The shapes, corner colour, fill,
+				logo, and frame are the ones the photo replaces; they come back when you remove the photo or untick "Blend the
+				picture into the code".
 			</p>
 		{/if}
 
-		<fieldset
-			disabled={off}
-			aria-disabled={off}
-			class="m-0 grid min-w-0 gap-5 border-0 p-0 transition-opacity {off ? 'opacity-40 select-none' : ''}"
-		>
-			<!-- Colours -->
-			<div class="grid gap-3">
+		<!-- Code and Background are the only two settings that mean the same thing whichever renderer
+		     is in charge, so they sit outside the fieldset a photo disables. They used to be inside
+		     it, which left them governing the Photo QR output while greyed out and unreachable: a
+		     code coloured as one end of a gradient could not be taken back without removing the
+		     picture first. Everything below the fieldset really is dropped by the halftone renderer. -->
+		<div class="grid gap-3">
 				<p class="subhead">
 					Colours
 					<span class="subhead-end">
@@ -203,9 +203,10 @@
 				     field loses its last character. -->
 				<div class="grid grid-cols-2 gap-3 lg:grid-cols-1 xl:grid-cols-2">
 					<ColourField label="Code" bind:value={design.fg} {related} />
-					<ColourField label="Background" bind:value={design.bg} disabled={design.transparentBg} {related} />
+					<!-- Transparent is not available to a photo, so it does not lock the field there. -->
+					<ColourField label="Background" bind:value={design.bg} disabled={design.transparentBg && !off} {related} />
 					<!-- The corners follow the code colour until one is chosen; the link puts them back. -->
-					<ColourField label="Corners" bind:value={design.cornerFg} {related}>
+					<ColourField label="Corners" bind:value={design.cornerFg} disabled={off} {related}>
 						{#snippet end()}
 							{#if design.cornerColor !== null}
 								<button type="button" class="text-xs text-ink-3 underline hover:text-ink" onclick={() => (design.cornerColor = null)}>Match code</button>
@@ -215,6 +216,14 @@
 						{/snippet}
 					</ColourField>
 				</div>
+			</div>
+
+		<fieldset
+			disabled={off}
+			aria-disabled={off}
+			class="m-0 grid min-w-0 gap-5 border-0 p-0 transition-opacity {off ? 'opacity-40 select-none' : ''}"
+		>
+			<div class="grid gap-3">
 				{#if advanced}
 					<label class="toggle">
 						<input type="checkbox" role="switch" bind:checked={design.transparentBg} />

@@ -16,50 +16,27 @@ export function weakestForeground(fg: string, cornerColor: string | null, bg: st
 /**
  * The bar a silhouette's shape colour is held to, and it is deliberately not `CONTRAST_MIN`.
  *
- * Measured 2026-09-07 before this threshold was chosen: a heart silhouette rendered at every
- * grey from 0 to 255 as the shape colour, black code on white, decoded on every single one,
- * including a shape identical to the code colour. The dots are painted at full strength over
- * the picture, so the module pattern survives whatever the shape does; the decode check never
- * objects. Warning at 4:1 would therefore have been telling people a scan was at risk on
- * evidence we do not have, and would have fired on almost everything: with a black code on
- * white paper, clearing 4:1 on both pairs needs the shape between about 0.15 and 0.21
- * luminance, a band so narrow that the site's own accent teal (3.5:1) misses it.
- *
- * So this is an appearance bar, not a scanning one: 3:1 is what WCAG 1.4.11 asks of a graphical
- * object, which is what the shape is. The code itself keeps the stricter `CONTRAST_MIN`, and
- * the decode check stays the gate. Whether a mid-tone shape costs anything on a real phone at
- * 30 mm is a question for row G of the scan matrix, not for a rule invented here.
+ * Measured 2026-09-07: a heart silhouette rendered at every grey from 0 to 255 as the shape
+ * colour, black code on white, decoded on every one — including a shape identical to the code
+ * colour. The dots are painted at full strength over the picture, so the module pattern survives
+ * whatever the shape does and the decode check never objects. This is therefore an appearance
+ * bar, not a scanning one: 3:1 is what WCAG 1.4.11 asks of a graphical object, which is what the
+ * shape is. The code itself keeps the stricter `CONTRAST_MIN`, and the decode check stays the
+ * gate. What a mid-tone shape costs on a real phone at 30 mm is row G of the scan matrix.
  */
 export const SHAPE_CONTRAST_MIN = 3;
 
-/** Which pair a shape colour fails on; they need opposite advice, so the caller is told which. */
-export type ShapeRisk = {
-	/** The worse of the two ratios. */
-	ratio: number;
-	/** `background` when the shape barely shows, `code` when it swallows its own dots. */
-	worst: 'background' | 'code';
-};
-
 /**
- * What a silhouette's shape colour costs, as a ratio and the pair that costs it.
+ * How well a silhouette's shape stands out from the paper, as a ratio.
  *
- * A silhouette paints the shape between the dots; the dots themselves stay the code and
- * background colours, so two pairs matter that `weakestForeground` cannot express. The shape
- * against the paper decides whether the shape shows at all: one that reads as paper vanishes,
- * and the light dots standing on it go with it. The code colour against the shape is the pair
- * that actually breaks a scan, because a shape close to the code colour swallows its own dark
- * dots and reads as one solid blob.
- *
- * A ratio rather than a colour, because "code against shape" is not a foreground against paper
- * and so cannot be folded into `weakestForeground` and handed to the engine's sizing rules.
- * §8j asked for this "the way they take the corner colour"; a corner colour is one more ink on
- * the same paper, and a shape colour is the paper for half the dots. For the same reason it does
- * not reach the Style panel's contrast badge, which is the code's own print-safety and would be
- * downgraded by a shape that costs a scan nothing (see `SHAPE_CONTRAST_MIN`).
+ * Only the background pair is worth checking, which is a correction to the first version of this
+ * rule. Inside the shape the dark dots are the code colour and the light dots are the background
+ * colour, and the pattern survives whichever of the two the shape resembles: a shape close to the
+ * code colour reads as solid ink with the light dots punched through it, which is the classic
+ * silhouette and exactly what these shapes are for — it was wrong to warn about it. A shape close
+ * to the paper is the real failure, because then there is nothing to see: the shape disappears
+ * into the background and takes the light dots standing in it along too.
  */
-export function shapeContrast(fg: string, shape: string, bg: string): ShapeRisk {
-	const paper = paperColor(bg);
-	const onPaper = contrastRatio(shape, paper);
-	const onCode = contrastRatio(fg, shape);
-	return onPaper < onCode ? { ratio: onPaper, worst: 'background' } : { ratio: onCode, worst: 'code' };
+export function shapeContrast(shape: string, bg: string): number {
+	return contrastRatio(shape, paperColor(bg));
 }

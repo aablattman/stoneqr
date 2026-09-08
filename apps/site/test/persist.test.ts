@@ -13,7 +13,7 @@ function fake(): Design {
 		logoName: '', logoWidth: 0.2, logoAspect: 1, logoKnockout: true, logoMargin: 1,
 		frameEnabled: false, frameText: 'Scan me', frameColor: '#000000', frameTextColor: '#ffffff',
 		halftone: false, halftoneImageName: '', halftoneDotScale: 0.4, halftoneDim: 0, halftoneGrayscale: false,
-		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, shapeColor: null, halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,
+		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, shapeColor: '#000000', halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,
 		shortUrl: null,
 		fields: defaultFields()
 	} as unknown as Design;
@@ -88,7 +88,8 @@ describe('persist', () => {
 		const bad = { v: 1, cornerColor: 'x'.repeat(30000), shapeColor: 'teal', shortUrl: 'y'.repeat(30000), scanDistanceM: Infinity, fg: 'red', bg: '#12345', gradientTo: 'url(#x)' } as unknown as Saved;
 		expect(apply(b, bad)).toBe(true);
 		expect(b.cornerColor).toBeNull();
-		expect(b.shapeColor).toBeNull();
+		// Not nullable: it is a plain fill colour, so `teal` is refused and the default stands.
+		expect(b.shapeColor).toBe('#000000');
 		expect(b.shortUrl).toBeNull();
 		expect(b.scanDistanceM).toBeNull();
 		expect(b.fg).toBe('#000000');

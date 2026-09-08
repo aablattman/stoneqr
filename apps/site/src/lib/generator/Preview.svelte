@@ -53,14 +53,17 @@
 			// The code and background colours, which the renderer has always taken and the site never passed
 			// (audit 2026-09-06). The worker, the SVG download, and the decode check all copy these options.
 			dark: hexToRgb(design.fg),
-			light: design.transparentBg ? ([255, 255, 255] as [number, number, number]) : hexToRgb(design.bg),
+			// Always the chosen background. A photo cannot be transparent (the raster has no alpha and
+			// the picture has to sit on something), so rather than force white behind it and leave the
+			// Background field meaningless, the picture sits on the colour the field shows.
+			light: hexToRgb(design.bg),
 			dotScale: design.halftoneDotScale,
 			imageDim: design.halftoneDim,
 			grayscale: design.halftoneGrayscale,
 			contrast: design.halftoneContrast,
 			threshold: design.halftoneSilhouette ? design.halftoneThreshold : undefined,
 			// Only the shape takes this; the engine ignores it when there is no cut to apply.
-			ink: hexToRgb(design.shapeFg),
+			ink: hexToRgb(design.shapeColor),
 			imageZoom: design.halftoneZoom,
 			imageOffsetX: design.halftoneOffsetX,
 			imageOffsetY: design.halftoneOffsetY

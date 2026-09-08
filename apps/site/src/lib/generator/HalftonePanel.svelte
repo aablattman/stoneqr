@@ -44,7 +44,7 @@
 		if (!design.halftoneImage) return '';
 		const tone = TONES.find((t) => t.id === design.halftoneTone)?.label ?? '';
 		// A shape colour is invisible once the panel is folded, so the summary says it is set.
-		const shape = design.halftone && design.halftoneSilhouette && design.shapeColor ? 'Shape colour' : '';
+		const shape = design.halftone && design.halftoneSilhouette && design.shapeColor !== '#000000' ? 'Shape colour' : '';
 		return [design.halftoneImageName, design.halftone ? tone : 'off', shape].filter(Boolean).join(' · ');
 	});
 
@@ -54,21 +54,15 @@
 	);
 
 	/**
-	 * Whether the shape will be hard to make out. Deliberately about appearance and not about
-	 * scanning: the dots are painted over the picture at full strength, so the shape colour does
-	 * not put a scan at risk (measured; see `SHAPE_CONTRAST_MIN`), and the decode check is the
-	 * gate either way. Silent while the shape follows the code colour, because then it is the
-	 * code colour and the Colours badge already covers it.
+	 * Whether the shape will stand out from the paper. Appearance, not scanning: the dots are
+	 * painted over the picture at full strength, so the shape colour cannot put a scan at risk
+	 * (measured; see `SHAPE_CONTRAST_MIN`), and the decode check is the gate either way.
 	 */
-	const shapeWarning = $derived.by(() => {
-		if (!design.halftoneSilhouette || design.shapeColor === null) return '';
-		const { ratio, worst } = shapeContrast(design.fg, design.shapeFg, design.bgColor);
-		if (ratio >= SHAPE_CONTRAST_MIN) return '';
-		// The two failures need opposite advice, so the rule says which one this is.
-		return worst === 'background'
-			? 'The shape is close to the background colour, so it will barely show. Move it away from the background, or pick a lighter background.'
-			: 'The shape is close to the code colour, so it will read as one solid blob rather than a shape. Move it away from the code colour.';
-	});
+	const shapeWarning = $derived(
+		design.halftoneSilhouette && shapeContrast(design.shapeColor, design.bgColor) < SHAPE_CONTRAST_MIN
+			? 'The shape is close to the background colour, so it will barely show. Move one of the two further from the other.'
+			: ''
+	);
 
 	let imageError = $state('');
 	const cropChanged = $derived(design.halftoneZoom !== 1 || design.halftoneOffsetX !== 0 || design.halftoneOffsetY !== 0);
@@ -215,17 +209,10 @@
 						format={advanced ? pct : () => ''}
 					/>
 					<!-- Under the Cut and only while the tone is Silhouette, because there is no shape to
-					     colour otherwise. Follows the code colour until one is picked, exactly as Corners
-					     does, so the built-in shapes stop being black by default. -->
-					<ColourField label="Shape" bind:value={design.shapeFg} {related}>
-						{#snippet end()}
-							{#if design.shapeColor !== null}
-								<button type="button" class="text-xs text-ink-3 underline hover:text-ink" onclick={() => (design.shapeColor = null)}>Match code</button>
-							{:else}
-								<span class="text-xs text-ink-3">Same as code</span>
-							{/if}
-						{/snippet}
-					</ColourField>
+					     colour otherwise. A plain fill colour of its own: it must not follow the code
+					     colour, or a code coloured as one end of a gradient hands that colour to the
+					     shape while the Style panel is disabled and cannot take it back. -->
+					<ColourField label="Shape" bind:value={design.shapeColor} {related} />
 					{#if shapeWarning}
 						<p class="notice notice-info">{shapeWarning}</p>
 					{/if}
@@ -247,8 +234,9 @@
 			{/if}
 			{#if design.halftoneOverridesStyle}
 				<p class="notice notice-info">
-					The photo replaces the Style settings. Dot shapes, gradients, the logo, and the frame are ignored while a photo is
-					blended in. Turn the photo off to use them.
+					The photo replaces most Style settings. Module and corner shapes, the corner colour, gradients, the logo, and the frame
+					are ignored while a photo is blended in; Code and Background still apply, and colour the dots and the paper.
+					Turn the photo off to use the rest.
 				</p>
 			{/if}
 		{/if}
