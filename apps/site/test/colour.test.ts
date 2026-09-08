@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { hexToHsv, hexToRgb, hsvToHex, isLight, normaliseHex, rgbToHex, rgbToHsv } from '$lib/colour';
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 /** The site's own tokens, which the picker offers as swatches. */
 const SITE = ['#f4f0e8', '#1b1917', '#1f6f63', '#a8551b', '#a3301d', '#d6cfc2'];
@@ -80,5 +82,28 @@ describe('isLight', () => {
 		expect(isLight('#ffffff')).toBe(true);
 		expect(isLight('#1b1917')).toBe(false);
 		expect(isLight('#1f6f63')).toBe(false);
+	});
+});
+
+/**
+ * Every colour a user can set goes through `ColourField`, which validates with `normaliseHex`
+ * before the value moves. `/bulk` did not until 2026-09-06: a native `<input type=color>` beside
+ * a text box bound straight to `fg` and `bg`, so an unprefixed `1f6f63` reached the encoder and
+ * the whole batch printed black (item A7 of `docs/audit-2026-09-06.md`). The rule is easy to
+ * break again by hand-rolling markup for a new colour, and nothing else would catch it, so it is
+ * pinned here rather than remembered.
+ */
+describe('no native colour input', () => {
+	const src = fileURLToPath(new URL('../src/', import.meta.url));
+
+	function walk(dir: string): string[] {
+		return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+			e.isDirectory() ? walk(`${dir}${e.name}/`) : /\.(svelte|ts)$/.test(e.name) ? [`${dir}${e.name}`] : []
+		);
+	}
+
+	it('is used nowhere in the site source', () => {
+		const offenders = walk(src).filter((f) => /type=(["'])color\1/.test(readFileSync(f, 'utf8')));
+		expect(offenders.map((f) => f.slice(src.length))).toEqual([]);
 	});
 });

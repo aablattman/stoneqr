@@ -179,6 +179,18 @@ off screen at 375 px or 1440 px. Contrast readouts and the frame colours behave 
 **Where it lands.** Phase 0, since `ColourField` is a primitive; it is exercised by Phase 1 on
 the five Style colours and by Phase 5 on `/bulk`.
 
+**Typing a colour, and what `/bulk` missed.** Manual hex entry is not an extra beside the picker,
+it is the way a brand colour actually gets in: nobody drags a square to `#1f6f63`. So there are
+two hex fields, the one on `ColourField` itself and the one inside the card, and both go through
+`normaliseHex`, which is the whole contract — 3 or 6 digits, `#` optional, any case, normalised to
+lower-case `#rrggbb` on blur, and `null` for everything else so a half-typed value sits in the
+field without reaching the design. Nothing on the site may take a colour any other way. Phase 5
+never converted `/bulk`, which kept the last two native `<input type=color>` on the site and,
+worse, bound their hex boxes straight to `fg` and `bg`, so an unprefixed `1f6f63` reached the
+encoder and the batch came out black without a word (item A7 of `docs/audit-2026-09-06.md`).
+Converted 2026-09-06; the "no `<input type=color>` anywhere on the site" claim above is now true
+of the code as well as the intent. A new colour control anywhere is `ColourField`, not markup.
+
 ---
 
 ### 3b. What Phase 0 settled

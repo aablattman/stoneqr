@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import Seo from '$lib/components/Seo.svelte';
 	import DropTile from '$lib/components/DropTile.svelte';
+	import ColourField from '$lib/components/ColourField.svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import { MODULE_MM_WARN, moduleMm, type Ecc } from '@stoneqr/engine';
@@ -451,20 +452,13 @@
 					<label for="width">Width (mm)</label>
 					<input id="width" class="input num" type="number" min="5" step="1" bind:value={width} />
 				</div>
-				<div class="field">
-					<label for="ink">Ink</label>
-					<div class="flex items-center gap-2">
-						<input id="ink" type="color" class="h-9 w-12 cursor-pointer rounded border border-rule-2 bg-white p-0.5" bind:value={fg} />
-						<input class="input num" type="text" aria-label="Ink hex" bind:value={fg} maxlength="7" />
-					</div>
-				</div>
-				<div class="field">
-					<label for="paper">Paper</label>
-					<div class="flex items-center gap-2">
-						<input id="paper" type="color" class="h-9 w-12 cursor-pointer rounded border border-rule-2 bg-white p-0.5" bind:value={bg} />
-						<input class="input num" type="text" aria-label="Paper hex" bind:value={bg} maxlength="7" />
-					</div>
-				</div>
+				<!-- The same control as the generator's: a validated hex field beside a swatch that opens
+				     our own picker. The pair of native <input type=color> that stood here were the last on
+				     the site, and their hex boxes bound straight to fg and bg, so a half-typed "#1f6" or a
+				     pasted "1f6f63" reached the encoder, the decode check, and layoutLabels, all of which
+				     fall back to black without saying so. A whole batch could come out black. -->
+				<ColourField label="Ink" bind:value={fg} related={[bg]} />
+				<ColourField label="Paper" bind:value={bg} related={[fg]} />
 				<div class="field col-span-2">
 					<label for="dpi">PNG resolution</label>
 					<select id="dpi" class="select" bind:value={dpi}>
