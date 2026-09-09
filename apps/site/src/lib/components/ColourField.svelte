@@ -5,7 +5,7 @@
 	 * a separate window that floats away from the control and stays open while you click
 	 * elsewhere. There is no <input type=color> anywhere on the site.
 	 */
-	import type { Snippet } from 'svelte';
+	import { untrack, type Snippet } from 'svelte';
 	import { normaliseHex } from '$lib/colour';
 	import ColourPopover from './ColourPopover.svelte';
 
@@ -32,12 +32,28 @@
 	let open = $state(false);
 	/** The hex field is free text while it is being typed; only a valid value reaches the design. */
 	let text = $state(value);
+	/** True while the text is not a colour, so the field can say so without touching the design. */
+	const bad = $derived(normaliseHex(text) === null);
 
-	// Keep the field in step when the colour changes from the picker, a swatch, or a reset.
+	// Keep the field in step when the colour changes from the picker, a swatch, or a reset. Only
+	// `value` is tracked here: reading `text` as a dependency made the effect re-run on every
+	// keystroke and snap a half-typed "#a3" straight back to the current colour, so the box could
+	// take a pasted code but never a typed one.
 	$effect(() => {
 		const norm = normaliseHex(value);
-		if (norm && normaliseHex(text) !== norm) text = norm;
+		untrack(() => {
+			if (norm && normaliseHex(text) !== norm) text = norm;
+		});
 	});
+
+	/** Enter commits (via blur, which normalises); Escape puts the current colour back. */
+	function key(e: KeyboardEvent) {
+		if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+		else if (e.key === 'Escape') {
+			text = normaliseHex(value) ?? value;
+			e.stopPropagation();
+		}
+	}
 </script>
 
 <div class="field">
@@ -63,16 +79,20 @@
 				class="input num px-2 py-1.5 text-sm"
 				type="text"
 				aria-label="{label} hex"
+				aria-invalid={bad}
 				maxlength="7"
 				spellcheck="false"
 				autocapitalize="off"
+				autocomplete="off"
 				{disabled}
 				value={text}
+				onfocus={(e) => e.currentTarget.select()}
 				oninput={(e) => {
 					text = e.currentTarget.value;
 					const norm = normaliseHex(text);
 					if (norm) value = norm;
 				}}
+				onkeydown={key}
 				onblur={() => (text = normaliseHex(text) ?? value)}
 			/>
 		{/if}

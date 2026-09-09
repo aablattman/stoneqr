@@ -202,6 +202,14 @@ a:hover {
 	border-color: var(--color-accent);
 	box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
+/* A half-typed hex in a colour field: say so in the border, but keep the focus ring's shape. */
+.input[aria-invalid='true'] {
+	border-color: var(--color-warn);
+}
+.input[aria-invalid='true']:focus {
+	border-color: var(--color-warn);
+	box-shadow: 0 0 0 3px var(--color-warn-soft);
+}
 .input.num,
 .textarea.mono {
 	font-family: var(--font-mono);
