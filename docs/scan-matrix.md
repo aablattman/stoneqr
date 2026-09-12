@@ -4,7 +4,7 @@ Real-phone results for every kind of code the generator makes, at the sizes peop
 
 ## How to run it
 
-1. **Build the sheets.** From the repo root run `bun run scan-sheets`, open the URL it prints in any browser, and wait for "Done". It writes `docs/scan-sheets.pdf` (ignored by git; about 2 MB, 14 pages). Pass `-- --photo ~/Pictures/some.jpg` to use a real photograph for the Photo QR rows instead of the painted stand-in; note which you used in the results.
+1. **Build the sheets.** From the repo root run `bun run scan-sheets`, open the URL it prints in any browser, and wait for "Done". It writes `docs/scan-sheets.pdf` (ignored by git; about 2 MB, 15 pages). Pass `-- --photo ~/Pictures/some.jpg` to use a real photograph for the Photo QR rows instead of the painted stand-in; note which you used in the results.
 2. **Print** on plain paper at 100% scale, never "fit to page". A laser print is the baseline. If you have an inkjet, print a second copy later and record it as a second pass; inkjet dot gain is what turns silhouette dots grey.
 3. **Check the print** with a ruler: A4 (50 mm) should measure 50 mm across the quiet zone. If it does not, the printer scaled the page.
 4. **Three phones**, the default camera app on each, plus Google Lens on one of them. Write the model and OS version in the column headers below. The interesting spread is one recent iPhone, one recent Android, and one older or cheaper Android.
@@ -19,7 +19,7 @@ Legend: ✅ scanned first try · ~ scanned after moving or changing the light ·
 
 ### What the next print owes us
 
-The sheet built on 2026-09-06 carries five codes no phone has seen. Everything else already has a
+The sheet built on 2026-09-12 carries nine codes no phone has seen. Everything else already has a
 Pixel 10 Pro column from 2026-09-05.
 
 - **C3**, the widest logo the site allows: 27% of the width, hiding 16% of the code, which is past
@@ -29,6 +29,8 @@ Pixel 10 Pro column from 2026-09-05.
   knockout switch was a no-op then, so that print was a second copy of C1.
 - **M1, M2, M3**, SVG logos through the real upload path, the last a wide wordmark that should sit
   in a wide hole.
+- **N1 to N4**, the built-in logo icons (added 2026-09-12): the everyday WiFi case, the thinnest
+  icon at the widest size, an icon in navy on the Rounded preset, and one at business-card size.
 
 A colour print is still owed for L2 (red ink) and L8 (the light end of a gradient), which the
 black-and-white laser could not test.
@@ -180,6 +182,23 @@ New on 2026-09-06 and not yet on paper.
 | M1 | 30 mm | ✅ | – | – | – | logo 21% wide, hides 11%; square hole |
 | M2 | 50 mm | ✅ | – | – | – | logo 21% wide, hides 11%; square hole |
 | M3 | 30 mm | ✅ | – | – | – | wide wordmark, logo 27% wide, hides 7%; the hole is wide and short |
+
+## N. Built-in logo icons
+
+The icons under the logo tile, added 2026-09-12. Each is drawn by `logo-icons.ts` in the code
+colour and placed unprepared, exactly as the Logo panel places it, on the clear space. That every
+icon decodes in software at 20% and at the 32% maximum is already checked by
+`bun run logo-fixtures`; these rows are the paper and the phones. N4 is also a legibility check: at
+20 mm the icon is about 3.5 mm across, so note whether a person still reads it as a calendar.
+
+Not yet on paper.
+
+| ID | Size | Software | iPhone | Android | Google Lens | Notes |
+|---|---|---|---|---|---|---|
+| N1 | 30 mm | ✅ | – | – | – | WiFi icon, logo 21% wide, hides 11% |
+| N2 | 30 mm | ✅ | – | – | – | Menu icon at the widest the site allows, logo 27% wide, hides 16%, past the warn line; the thinnest strokes of the set |
+| N3 | 30 mm | ✅ | – | – | – | Calendar icon in navy `#1a3d8f` on the Rounded preset, logo 21% wide, hides 11% |
+| N4 | 20 mm | ✅ | – | – | – | Calendar icon at business-card size, logo 21% wide, hides 11%, the icon about 3.5 mm across; does the icon still read? |
 
 ## File formats opened in
 

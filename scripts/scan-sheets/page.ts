@@ -32,6 +32,7 @@ import { prepareSvgLogo } from '../../apps/site/src/lib/logo-svg';
 import { svgToCanvas, canvasToPngBlob, canvasImageData } from '../../apps/site/src/lib/svg-raster';
 import { loadImageRaster, rasterToPngBlob } from '../../apps/site/src/lib/halftone';
 import { GLYPHS, glyphDataUrl } from '../../apps/site/src/lib/glyphs';
+import { LOGO_ICONS, logoIconDataUrl } from '../../apps/site/src/lib/logo-icons';
 import { LOOKS, type LookId } from '../../apps/site/src/lib/looks';
 import { SIZE_TIERS } from '../../apps/site/src/lib/generator/sizes';
 
@@ -117,15 +118,19 @@ const halftone = (id: string, mm: number, what: string, picture: HalftoneSpec['p
 	spec: { kind: 'halftone', payload: scanUrl(id), picture, opts: { dotScale: 0.4, ...opts } }
 });
 
-/** Which drawing a styled row puts in the middle. The SVG ones go through the upload path. */
-type LogoPicture = 'favicon' | 'favicon-svg' | 'wordmark-svg';
+/**
+ * Which drawing a styled row puts in the middle. The SVG ones go through the upload path; an icon
+ * is drawn by `logo-icons.ts` in the row's code colour and placed unprepared, as the Logo panel does.
+ */
+type LogoFile = 'favicon' | 'favicon-svg' | 'wordmark-svg';
+type LogoPicture = LogoFile | { icon: string };
 /** A picture with the shape the hole has to be cut for. */
 interface Pic {
 	url: string;
 	/** Height over width. */
 	aspect: number;
 }
-type Pictures = Record<LogoPicture, Pic> & { photo: string };
+type Pictures = Record<LogoFile, Pic> & { photo: string };
 
 /**
  * The widest logo this code will still let you download: the last tread below the block. It
@@ -288,6 +293,18 @@ const SECTIONS: Section[] = [
 			styled('M2', 50, 'SVG mark · 50 mm', 'classic', { ecc: 'H', logo: 'favicon-svg', logoWidth: 0.2, logoKnockout: true }),
 			styled('M3', 30, 'Wide wordmark · 30 mm', 'classic', { ecc: 'H', logo: 'wordmark-svg', logoWidth: 0.28, logoKnockout: true })
 		]
+	},
+	{
+		code: 'N',
+		title: 'Built-in logo icons',
+		watch:
+			'The icons offered under the logo tile, placed as the Logo panel places them: ink only, in the code colour, on the clear space. N1 is the everyday case (a WiFi sign). N2 is the widest the site allows, with the thinnest strokes of the set (the fork tines). N3 is an icon in navy on the Rounded preset. N4 is business-card size, where the icon is about 3.5 mm across: note whether it still reads as a calendar, not only whether the code scans.',
+		items: [
+			styled('N1', 30, 'WiFi icon · 30 mm', 'classic', { ecc: 'H', logo: { icon: 'wifi' }, logoWidth: 0.2, logoKnockout: true }),
+			styled('N2', 30, 'Menu icon at the widest · 30 mm', 'classic', { ecc: 'H', logo: { icon: 'menu' }, logoWidth: 'widest', logoKnockout: true }),
+			styled('N3', 30, 'Calendar icon, navy, Rounded · 30 mm', 'rounded', { ecc: 'H', fg: '#1a3d8f', logo: { icon: 'calendar' }, logoWidth: 0.2, logoKnockout: true }),
+			styled('N4', 20, 'Calendar icon · 20 mm', 'classic', { ecc: 'H', logo: { icon: 'calendar' }, logoWidth: 0.2, logoKnockout: true })
+		]
 	}
 ];
 
@@ -448,7 +465,11 @@ async function renderItem(item: Item, pictures: Pictures): Promise<Rendered> {
 	if (spec.kind === 'styled') {
 		const qr = encode(spec.payload, { ecc: spec.ecc, minVersion: 2 });
 		const look = LOOKS.find((l) => l.id === spec.look)!;
-		const pic = spec.logo ? pictures[spec.logo] : undefined;
+		const pic = !spec.logo
+			? undefined
+			: typeof spec.logo === 'object'
+				? { url: logoIconDataUrl(LOGO_ICONS.find((i) => i.id === (spec.logo as { icon: string }).icon)!, spec.fg ?? '#000000'), aspect: 1 }
+				: pictures[spec.logo];
 		const holeInput = {
 			modules: qr.size,
 			version: qr.version,
