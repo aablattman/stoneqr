@@ -11,7 +11,10 @@
 	import { untrack } from 'svelte';
 	import { LOGO_BLOCK_COVER, LOGO_WARN_COVER } from '@stoneqr/engine';
 	import { isSvgFile, pictureFileProblem } from './pictures';
-	import { LOGO_WIDTH_DEFAULT, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '$lib/logo-size';
+	import { fitLogo, logoTreads, sameTread, LOGO_WIDTH_DEFAULT, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN, type LogoFit } from '$lib/logo-size';
+	import { FULL_CROP, LOGO_ZOOM_MAX, LOGO_ZOOM_MIN, cropZoom, freeCropModel, isFullCrop, zoomCrop } from '$lib/logo-crop';
+	import type { CropRect } from '$lib/crop';
+	import CropBox from '$lib/components/CropBox.svelte';
 	import { preloadStyled } from '$lib/styled';
 	import { LOGO_ICONS, logoIconArt, logoIconByName, logoIconDataUrl, logoIconName, type LogoIcon } from '$lib/logo-icons';
 	import DropTile from '$lib/components/DropTile.svelte';
@@ -33,29 +36,85 @@
 	 * Basic gets the width alone; Advanced also gets the share of the code the logo hides, which
 	 * is the number the error correction cares about and the one the warnings are set against.
 	 */
-	const logoReadout = $derived.by(() => {
-		const fit = design.logoFit;
-		// Until there is content, or while Artistic QR owns the code, there is no staircase to land
-		// on: show what was asked, which is what comes back when the logo does.
-		if (!design.encoded || off) return `${Math.round(design.logoWidth * 100)}% of width`;
-		if (!fit.logoW) return 'no room';
-		const width = `${Math.round(fit.width * 100)}% of width`;
-		return advanced ? `${width} · hides ${Math.round(fit.cover * 100)}%` : width;
+	const pct = (v: number) => `${Math.round(v * 100)}%`;
+	const treadReadout = (t: LogoFit) => (advanced ? `${pct(t.width)} of width · hides ${pct(t.cover)}` : `${pct(t.width)} of width`);
+	/** Until there is content, or while Artistic QR owns the code, there is no staircase to land on: what was asked is what comes back when the logo does. */
+	const askedReadout = $derived(`${pct(design.logoWidth)} of width`);
+
+	/**
+	 * The code the hole is being cut in, as the sizing port wants it. Null until there is a code
+	 * to cut, or while Artistic QR owns it.
+	 */
+	const holeInput = $derived(
+		design.encoded && !off
+			? {
+					modules: design.encoded.size,
+					version: design.encoded.version,
+					ecc: design.ecc,
+					margin: design.effectiveLogoMargin,
+					aspect: design.logoHoleAspect
+				}
+			: null
+	);
+	/**
+	 * The sizes this code can actually produce for this logo, smallest first. The Size slider
+	 * steps through these, one tread per position, rather than sliding over a range where most
+	 * positions changed nothing and the readout jumped when one finally did. `logoWidth` stays
+	 * the width asked for, so the same design lands on the nearest tread of whatever code the
+	 * content produces next.
+	 */
+	const treads = $derived(holeInput ? logoTreads(holeInput) : []);
+	const treadIndex = $derived.by(() => {
+		const i = treads.findIndex((t) => sameTread(t, design.logoFit));
+		if (i >= 0) return i;
+		// Asked for a width no offered tread answers to: the nearest one is the honest position.
+		let best = 0;
+		treads.forEach((t, j) => {
+			if (Math.abs(t.width - design.logoWidth) < Math.abs(treads[best]!.width - design.logoWidth)) best = j;
+		});
+		return best;
 	});
+	/** Where the default width lands on this code, so the slider's reset dot means the same thing everywhere. */
+	const defaultIndex = $derived.by(() => {
+		if (!holeInput) return 0;
+		const fit = fitLogo(LOGO_WIDTH_DEFAULT, holeInput);
+		const i = treads.findIndex((t) => sameTread(t, fit));
+		return i >= 0 ? i : 0;
+	});
+	function setTread(i: number) {
+		const at = Math.round(i);
+		const t = treads[at];
+		if (!t) return;
+		// The default tread writes the default itself, so a design left there stays out of share links.
+		design.logoWidth = at === defaultIndex ? LOGO_WIDTH_DEFAULT : Math.round(t.width * 1000) / 1000;
+	}
+	const coverClass = $derived(design.logoCover > LOGO_BLOCK_COVER ? 'text-block' : design.logoCover > LOGO_WARN_COVER ? 'text-warn' : '');
+
+	/** The crop: the box on the thumbnail is the blank space, and its four fields live on the design. */
+	function setCrop(c: CropRect) {
+		design.logoCropX = c.u;
+		design.logoCropY = c.v;
+		design.logoCropW = c.w;
+		design.logoCropH = c.h;
+	}
+	const resetCrop = () => setCrop(FULL_CROP);
+	const cropChanged = $derived(!isFullCrop(design.logoCrop));
+	const cropModel = freeCropModel(() => design.logoCrop, setCrop);
 
 	/** What the folded panel says, so nothing is hidden by folding. */
 	const summary = $derived.by(() => {
 		if (!design.logo) return '';
 		if (off) return 'Off: Artistic QR';
 		// Painting over the modules is the unusual choice, so a folded panel says so.
-		return [design.logoName, design.logoKnockout ? '' : 'over modules'].filter(Boolean).join(' · ');
+		return [design.logoName, cropChanged ? 'cropped' : '', design.logoKnockout ? '' : 'over modules'].filter(Boolean).join(' · ');
 	});
 
 	/**
-	 * A wide wordmark is fitted to the width, so it comes out as a thin strip. `logoAspect` is
-	 * height over width, measured by the Preview.
+	 * A wide wordmark is fitted to the width, so it comes out as a thin strip. The hole follows
+	 * the crop, so this is the cropped picture's shape (height over width), and cropping the box
+	 * down to the mark is the cure the hint offers.
 	 */
-	const wide = $derived(!!design.logo && design.logoAspect < 0.5);
+	const wide = $derived(!!design.logo && design.logoHoleAspect < 0.5);
 
 	/** The built-in icon the logo is, if it is one. */
 	const icon = $derived(logoIconByName(design.logoName));
@@ -102,6 +161,8 @@
 				});
 			}
 			design.logoName = file.name;
+			// A new picture: the last one's crop means nothing on it.
+			resetCrop();
 			// Dropping a logo says what is wanted. Leaving the picture on would show no logo at all,
 			// so the blend is switched off, the picture kept, and the switch named.
 			if (design.halftoneActive) {
@@ -121,6 +182,7 @@
 		design.logo = logoIconDataUrl(pick, design.fg);
 		design.logoName = logoIconName(pick);
 		design.logoAspect = 1;
+		resetCrop();
 		if (design.halftoneActive) {
 			design.halftone = false;
 			notes.push('Artistic QR was switched off so the icon shows. Your picture is kept; switch it back on under Artistic QR.');
@@ -133,6 +195,7 @@
 		design.logo = undefined;
 		design.logoName = '';
 		design.logoAspect = 1;
+		resetCrop();
 		logoError = '';
 	}
 </script>
@@ -192,18 +255,65 @@
 			<fieldset
 				disabled={off}
 				aria-disabled={off}
-				class="m-0 grid min-w-0 gap-3 border-0 p-0 transition-opacity {off ? 'opacity-40 select-none' : ''}"
+				class="m-0 grid min-w-0 gap-3 border-0 p-0 transition-opacity {off ? 'pointer-events-none opacity-40 select-none' : ''}"
 			>
-				<Slider
-					label="Size"
-					bind:value={design.logoWidth}
-					min={LOGO_WIDTH_MIN}
-					max={LOGO_WIDTH_MAX}
-					step={0.01}
-					reset={LOGO_WIDTH_DEFAULT}
-					format={() => logoReadout}
-					readoutClass={design.logoCover > LOGO_BLOCK_COVER ? 'text-block' : design.logoCover > LOGO_WARN_COVER ? 'text-warn' : ''}
-				/>
+				<!-- Not for a built-in icon, which is drawn to fill its box already. The crop is the
+				     Artistic QR crop's sibling, free in shape and bounded to the picture: the box is
+				     the blank space, and the hole is cut to its shape. -->
+				{#if !icon}
+					<div class="grid gap-3">
+						<p class="subhead">Crop</p>
+						<CropBox
+							src={design.logo}
+							model={cropModel}
+							disabled={off}
+							label="Crop. Drag the box to choose the part of the picture that goes in the code, or use the arrow keys; drag its corner to change its size and shape, holding Shift to keep the shape, or press plus and minus to zoom."
+						/>
+						<Slider
+							label="Zoom"
+							bind:value={() => cropZoom(design.logoCrop), (z) => setCrop(zoomCrop(design.logoCrop, z))}
+							min={LOGO_ZOOM_MIN}
+							max={LOGO_ZOOM_MAX}
+							step={0.05}
+							reset={1}
+							format={(v) => `${v.toFixed(2)}×`}
+						/>
+						<p class="hint">
+							The box is the blank space in the middle of the code. Drag it to choose what goes there, and drag its
+							corner to change its size and shape; the space takes the shape of the box.
+							{#if cropChanged}<button type="button" class="underline" onclick={resetCrop}>Reset crop</button>{/if}
+						</p>
+					</div>
+				{/if}
+				{#if !holeInput}
+					<Slider
+						label="Size"
+						bind:value={design.logoWidth}
+						min={LOGO_WIDTH_MIN}
+						max={LOGO_WIDTH_MAX}
+						step={0.01}
+						reset={LOGO_WIDTH_DEFAULT}
+						format={() => askedReadout}
+					/>
+				{:else if treads.length >= 2}
+					<!-- One position per size the code can produce, so every step of the slider changes the logo. -->
+					<Slider
+						label="Size"
+						bind:value={() => treadIndex, setTread}
+						min={0}
+						max={treads.length - 1}
+						step={1}
+						reset={defaultIndex}
+						format={(i) => treadReadout(treads[Math.round(i)] ?? treads[0]!)}
+						readoutClass={coverClass}
+					/>
+				{:else}
+					<div class="row">
+						<span class="row-label">Size</span>
+						<p class="hint">{treads.length ? 'The only size that fits this code.' : 'No room for a logo on this code.'}</p>
+						<div class="row-readout"><span class="num {coverClass}">{treads.length ? treadReadout(treads[0]!) : 'no room'}</span></div>
+					</div>
+				{/if}
 				{#if design.logoKnockout}
 					<Slider label="Margin" bind:value={design.logoMargin} min={0} max={3} step={1} reset={1} format={(v) => `${v} mod`} />
 				{/if}
@@ -222,8 +332,9 @@
 				</p>
 				{#if wide}
 					<p class="hint">
-						A wide logo is fitted to the width of the space, so it comes out short. A square or round version, such
-						as your icon or monogram, fills the middle better and reads from further away.
+						A wide logo is fitted to the width of the space, so it comes out short. Crop the box down to the mark
+						or monogram if there is one, or use a square or round version: it fills the middle better and reads
+						from further away.
 					</p>
 				{/if}
 			</fieldset>

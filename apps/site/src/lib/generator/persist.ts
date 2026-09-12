@@ -35,7 +35,7 @@ export const PERSISTED = [
 	'width', 'unit', 'scanDistanceM', 'dpi',
 	'fg', 'bg', 'cornerColor', 'transparentBg', 'dot', 'cornerSquare', 'cornerDot',
 	'gradient', 'gradientTo', 'gradientAngleDeg',
-	'logoName', 'logoWidth', 'logoAspect', 'logoKnockout', 'logoMargin',
+	'logoName', 'logoWidth', 'logoAspect', 'logoCropX', 'logoCropY', 'logoCropW', 'logoCropH', 'logoKnockout', 'logoMargin',
 	'frameEnabled', 'frameText', 'frameColor', 'frameTextColor',
 	'halftone', 'halftoneImageName', 'halftoneDotScale', 'halftoneDim', 'halftoneGrayscale',
 	'halftoneContrast', 'halftoneSilhouette', 'halftoneThreshold', 'shapeColor', 'halftoneZoom', 'halftoneOffsetX', 'halftoneOffsetY',

@@ -10,7 +10,7 @@ function fake(): Design {
 		fg: '#000000', bg: '#ffffff', cornerColor: null, transparentBg: false,
 		dot: 'square', cornerSquare: 'square', cornerDot: 'square',
 		gradient: 'none', gradientTo: '#1f6f63', gradientAngleDeg: 45,
-		logoName: '', logoWidth: 0.2, logoAspect: 1, logoKnockout: true, logoMargin: 1,
+		logoName: '', logoWidth: 0.2, logoAspect: 1, logoCropX: 0, logoCropY: 0, logoCropW: 1, logoCropH: 1, logoKnockout: true, logoMargin: 1,
 		frameEnabled: false, frameText: 'Scan me', frameColor: '#000000', frameTextColor: '#ffffff',
 		halftone: false, halftoneImageName: '', halftoneDotScale: 0.4, halftoneDim: 0, halftoneGrayscale: false,
 		halftoneContrast: 1, halftoneSilhouette: false, halftoneThreshold: 0.5, shapeColor: '#000000', halftoneZoom: 1, halftoneOffsetX: 0, halftoneOffsetY: 0,

@@ -22,6 +22,7 @@ import {
 import { payloads, PayloadError, wifiWarnings, type PayloadType } from '@stoneqr/engine/payloads';
 import type { CornerDotStyle, CornerSquareStyle, DotStyle, GradientKind } from '$lib/styled';
 import { fitLogo, LOGO_WIDTH_DEFAULT, NO_LOGO } from '$lib/logo-size';
+import { cropAspect, normaliseCrop } from '$lib/logo-crop';
 import { LOOKS, lookFor, type LookId } from '$lib/looks';
 import { weakestForeground } from './contrast';
 
@@ -128,6 +129,16 @@ export class Design {
 	logoWidth = $state(LOGO_WIDTH_DEFAULT);
 	/** The picture's height divided by its width, measured from the file by the Preview. */
 	logoAspect = $state(1);
+	/**
+	 * The part of the picture that goes in the code: left, top, width, and height as fractions
+	 * of the picture, the whole picture by default. The blank space is cut to the crop's shape,
+	 * so a wordmark cropped to its mark gets a square hole. Read through `logoCrop`, which
+	 * repairs anything a design file may have put here.
+	 */
+	logoCropX = $state(0);
+	logoCropY = $state(0);
+	logoCropW = $state(1);
+	logoCropH = $state(1);
 	/** True cuts the modules out from under the logo; false paints it over them. */
 	logoKnockout = $state(true);
 	logoMargin = $state(1);
@@ -301,6 +312,10 @@ export class Design {
 
 	/** The library forces the margin to nought when the logo is painted over the modules. */
 	effectiveLogoMargin = $derived(this.logoKnockout ? this.logoMargin : 0);
+	/** The crop as a box that can be drawn, whatever the four fields hold. */
+	logoCrop = $derived(normaliseCrop({ u: this.logoCropX, v: this.logoCropY, w: this.logoCropW, h: this.logoCropH }));
+	/** The shape the hole is cut for: the cropped picture's, height over width. */
+	logoHoleAspect = $derived(cropAspect(this.logoCrop, this.logoAspect));
 	/**
 	 * What the styled renderer will actually produce for this logo on this code: the coefficient
 	 * to hand the library, the hole in modules, and the honest width, cover, and area figures.
@@ -314,7 +329,7 @@ export class Design {
 					version: this.encoded.version,
 					ecc: this.ecc,
 					margin: this.effectiveLogoMargin,
-					aspect: this.logoAspect
+					aspect: this.logoHoleAspect
 				})
 			: NO_LOGO
 	);

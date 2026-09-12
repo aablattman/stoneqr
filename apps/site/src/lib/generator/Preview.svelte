@@ -2,6 +2,7 @@
 	import { rasterize, verifyRasterAsync, type RasterImage } from '@stoneqr/engine';
 	import { renderStyled } from '$lib/styled';
 	import { svgToCanvas, canvasImageData } from '$lib/svg-raster';
+	import { cropLogo, isFullCrop } from '$lib/logo-crop';
 	import { SITE } from '$lib/site';
 	import Icon from '$lib/components/Icon.svelte';
 	import { describe, type Design } from './state.svelte';
@@ -147,6 +148,34 @@
 		};
 	});
 
+	/**
+	 * The logo as the renderer gets it: cut down to the crop. A whole-picture crop is the logo
+	 * itself, untouched. While a new crop is being cut the last one stays in place, so a drag
+	 * re-renders smoothly rather than flashing a code with no logo; the short wait folds a drag
+	 * into a few cuts. Local to the preview because the export panel reuses `styledSvg`.
+	 */
+	let logoRender = $state<string | undefined>(undefined);
+	let cropSeq = 0;
+	$effect(() => {
+		const src = design.logo;
+		const crop = design.logoCrop;
+		const seq = ++cropSeq;
+		if (!src || isFullCrop(crop)) {
+			logoRender = src;
+			return;
+		}
+		const t = setTimeout(async () => {
+			try {
+				const cut = await cropLogo(src, crop);
+				if (seq === cropSeq) logoRender = cut;
+			} catch {
+				// A picture that cannot be cut is shown whole rather than not at all.
+				if (seq === cropSeq) logoRender = src;
+			}
+		}, 60);
+		return () => clearTimeout(t);
+	});
+
 	// Styled rendering: re-render when any style input changes (lazy chunk loads on first use).
 	let styledSeq = 0;
 	$effect(() => {
@@ -169,7 +198,7 @@
 			gradient: design.gradient,
 			gradientTo: design.gradientTo,
 			gradientAngleDeg: design.gradientAngleDeg,
-			logo: design.logo,
+			logo: logoRender,
 			logoCoefficient: design.logoFit.coefficient,
 			title: `QR code: ${describe(design.type)}`,
 			logoKnockout: design.logoKnockout,

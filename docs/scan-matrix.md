@@ -70,6 +70,7 @@ the amber band on purpose.
 | C1 | 30 mm | ✅ | – | ✅ | – | logo 21% wide, hides 11%. Ticked under the old sizing; reprint to confirm |
 | C2 | 50 mm | ✅ | – | ✅ | – | logo 21% wide, hides 11%. Ticked under the old sizing; reprint to confirm |
 | C3 | 30 mm | ✅ | – | – | – | logo 27% wide, hides 16%: the widest the site allows, and past the warn line |
+| C4 | 30 mm | ✅ | – | – | – | the same PNG cropped through the crop box (zoomed 1.6× on the mark), logo 21% wide, hides 11%: the raster crop path, re-encoded through a canvas |
 
 ## D. Inverted (white on black)
 
@@ -182,6 +183,7 @@ New on 2026-09-06 and not yet on paper.
 | M1 | 30 mm | ✅ | – | – | – | logo 21% wide, hides 11%; square hole |
 | M2 | 50 mm | ✅ | – | – | – | logo 21% wide, hides 11%; square hole |
 | M3 | 30 mm | ✅ | – | – | – | wide wordmark, logo 27% wide, hides 7%; the hole is wide and short |
+| M4 | 30 mm | ✅ | – | – | – | the wordmark cropped to a square around its mark through the vector wrapper, logo 21% wide, hides 11%; the hole should be square, and none of the rest of the wordmark may show |
 
 ## N. Built-in logo icons
 

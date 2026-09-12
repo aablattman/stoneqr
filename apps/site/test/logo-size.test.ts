@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { alignmentCount, budgetModules, predictHole, fitLogo, NO_LOGO } from '../src/lib/logo-size';
+import { alignmentCount, budgetModules, predictHole, fitLogo, logoTreads, sameTread, NO_LOGO, LOGO_WIDTH_MIN, LOGO_WIDTH_MAX } from '../src/lib/logo-size';
 
 /**
  * Every expected hole and logo width below was read out of `@liquid-js/qr-code-styling`'s own
@@ -138,5 +138,66 @@ describe('fitLogo', () => {
 	it('has nothing to fit without a target or a code', () => {
 		expect(fitLogo(0, v3)).toBe(NO_LOGO);
 		expect(fitLogo(0.2, { ...v3, modules: 0 })).toBe(NO_LOGO);
+	});
+});
+
+describe('logoTreads', () => {
+	const v3 = { modules: 29, version: 3, ecc: 'H' as const, margin: 1, aspect: SQUARE };
+	const v13 = { modules: 69, version: 13, ecc: 'H' as const, margin: 1, aspect: SQUARE };
+
+	it('is the staircase of reachable logos on a small code, one tread per odd hole', () => {
+		const treads = logoTreads(v3);
+		// Holes 5, 7, 9 and 11 modules across at margin 1: logos of 3, 5, 7 and 9.
+		expect(treads.map((t) => t.logoW)).toEqual([3, 5, 7, 9]);
+		expect(treads.map((t) => t.hideX)).toEqual([5, 7, 9, 11]);
+	});
+
+	it('is every tread a width in the slider range can land on, and nothing else', () => {
+		for (const input of [v3, v13]) {
+			const treads = logoTreads(input);
+			const reachable = new Set<number>();
+			for (let w = LOGO_WIDTH_MIN; w <= LOGO_WIDTH_MAX + 1e-9; w += 0.001) reachable.add(fitLogo(w, input).logoW);
+			expect(treads.map((t) => t.logoW)).toEqual([...reachable].sort((a, b) => a - b));
+		}
+	});
+
+	it('keeps a tread just outside the range when it is the nearest answer to a width inside it', () => {
+		// A 33-module code: 3 modules is 9%, under the floor, but the nearest answer to 10%; 11 is
+		// 33%, past the ceiling, but nearer to 32% than 9 (27%) is. 13 (39%) is not, and is left out.
+		const v4 = { modules: 33, version: 4, ecc: 'H' as const, margin: 1, aspect: SQUARE };
+		const treads = logoTreads(v4);
+		expect(treads.map((t) => t.logoW)).toEqual([3, 5, 7, 9, 11]);
+		expect(treads[0]!.width).toBeLessThan(LOGO_WIDTH_MIN);
+		expect(treads.at(-1)!.width).toBeGreaterThan(LOGO_WIDTH_MAX);
+		expect(predictHole({ ...v4, coefficient: 1 }).logoW).toBe(13);
+	});
+
+	it('gives a finer staircase on a denser code, sorted smallest first', () => {
+		const treads = logoTreads(v13);
+		expect(treads.length).toBeGreaterThan(6);
+		for (let i = 1; i < treads.length; i++) expect(treads[i]!.logoW).toBeGreaterThan(treads[i - 1]!.logoW);
+	});
+
+	it('pairs each tread with the smallest coefficient that produces it', () => {
+		for (const t of logoTreads(v13)) {
+			const below = predictHole({ ...v13, coefficient: t.coefficient - 0.01 });
+			expect(sameTread(below, t)).toBe(false);
+			expect(sameTread(predictHole({ ...v13, coefficient: t.coefficient }), t)).toBe(true);
+		}
+	});
+
+	it('always contains the fit for any width in the range', () => {
+		for (const input of [v3, v13, { ...v13, aspect: 0.25 }, { ...v3, margin: 0 }]) {
+			const treads = logoTreads(input);
+			for (let w = LOGO_WIDTH_MIN; w <= LOGO_WIDTH_MAX + 1e-9; w += 0.01) {
+				const fit = fitLogo(w, input);
+				expect(treads.some((t) => sameTread(t, fit))).toBe(true);
+			}
+		}
+	});
+
+	it('is empty where fitLogo has nothing to fit', () => {
+		expect(logoTreads({ modules: 0, version: 1, ecc: 'H', margin: 1, aspect: SQUARE })).toEqual([]);
+		expect(fitLogo(0.2, { modules: 0, version: 1, ecc: 'H', margin: 1, aspect: SQUARE })).toBe(NO_LOGO);
 	});
 });

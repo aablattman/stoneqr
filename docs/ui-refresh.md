@@ -910,6 +910,62 @@ calendar, contact, location, document, menu, video, review. No brand marks, for 
 - The icon row shows while there is no logo and while the logo is an icon, so switching is one
   click; an uploaded logo hides it behind Remove.
 
+### 8m. The logo crop, and a Size slider with no dead spots
+
+2026-09-12, from Garrett: the logo feature "is quite far behind our Artistic QR functionality",
+the Size slider "is pretty much unusable", and he wants to "zoom/crop the image with it bounded
+to the internal portion of the QR code that's blank".
+
+- **Why the slider felt broken.** §8h made the width honest, but honest on a staircase: on a
+  version 3 code the slider ran 10% to 32% and only four positions changed anything. Most of the
+  travel did nothing and the readout jumped when one finally did.
+- **Why a logo needed a crop.** The hole was cut for the file's shape. A wordmark file with the
+  mark at one end, or a square export with padding all round, could only be fitted whole, so the
+  mark came out small and the "use a square version" hint was the only answer.
+
+**What changed.**
+
+- **The Size slider steps through the treads.** `logoTreads` in `lib/logo-size.ts` lists every
+  distinct logo the code can produce (each with the smallest coefficient that produces it), kept
+  to those a width between the floor and the ceiling would land on, so a tread just past the
+  ceiling stays when it is the nearest answer to 32%. The slider is an index into that list, one
+  position per size, and `fitLogo` now picks from the same list, so nothing it lands on changed.
+  `logoWidth` is still the width asked for, written from the chosen tread, so a design lands on
+  the nearest tread of whatever code the content produces next; the default tread writes the
+  default itself so it stays out of share links. Without content, the continuous slider stays.
+  A code with one reachable size shows it as a readout, no slider.
+- **The crop box is the blank space.** `CropBox.svelte` now drives a `CropModel` (`lib/crop.ts`)
+  instead of binding zoom and offsets, so the Artistic QR box (`placementModel`) and the logo box
+  (`freeCropModel` in `lib/logo-crop.ts`) share one component and one set of gestures; the
+  component still keeps no state of its own. The logo's box is free in shape (the corner handle
+  moves both axes, Shift keeps the shape) and bounded to the picture: there is nothing to draw
+  outside it, and breathing room is the Margin. The hole follows the box's shape
+  (`Design.logoHoleAspect`), so a wordmark cropped to its mark gets a square hole, which the sheet
+  proves in row M4. Zoom is a slider as well, 1× to 8×, scaling about the centre.
+- **The crop lives on the design** as four fractions of the picture, `logoCropX/Y/W/H`, in
+  `PERSISTED`, read through `Design.logoCrop`, which repairs whatever a design file put there. A
+  new upload, an icon, and Remove all reset it. Icons do not show the crop; they fill their box.
+- **The renderer gets the cropped picture, not the crop.** The Preview cuts the logo
+  (`cropLogo`) into a local `logoRender` and hands that to `renderStyled`, so exports, the decode
+  check, and the test sheet see it through `styledSvg` as before. A whole-picture crop is the
+  logo untouched, byte for byte. A raster goes through a canvas and comes back as a PNG at the
+  crop's own resolution, capped at 2048 px. An SVG must stay a drawing, so `cropSvgMarkup` nests
+  the prepared root whole inside a wrapper whose viewBox is the crop in the drawing's own units,
+  clipped to it (the renderer sets `overflow="visible"` on what it inlines), with a width and
+  height equal to the crop so the browser measures the shape the hole is cut for. The wrapper's
+  clip id `lgcrop` cannot collide with a prepared logo's, which are all `lg-` prefixed.
+- **Checked.** Vitest pins the treads (`logo-size.test.ts`), the crop arithmetic
+  (`logo-crop.test.ts`), and the wrapper (`logo-svg.test.ts`). `bun run logo-fixtures` cuts the
+  wordmark to a square around its mark and a Figma export off-centre, requires the vector path,
+  measures the wrapper in the browser against the aspect the hole was cut for (75 × 75), checks
+  the clip survives into the code, and decodes: 38 of 38. `bun run scan-sheets` gained C4 (the
+  PNG zoomed 1.6× through the canvas path) and M4 (the wordmark cropped to its mark through the
+  wrapper, hole 9 × 9); both decode, 55 codes, row IDs matched. On the dev server: a 4:1 PNG
+  uploaded through the real tile, the slider stepping 17% to 24% with the image growing to match,
+  Zoom 3× cutting the picture handed to the renderer, the decode badge staying green.
+- Not done: Basic and Advanced show the same crop controls, because a crop is not a number to
+  hide; and the Artistic QR box gained nothing, only a model behind it.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

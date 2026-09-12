@@ -157,33 +157,69 @@ export interface LogoFit extends Hole {
 /** Nothing to place: no logo, or a code too small to take one. */
 export const NO_LOGO: LogoFit = { ...EMPTY, coefficient: 0, width: 0, cover: 0, area: 0 };
 
-/**
- * Find the coefficient whose logo lands nearest `targetWidth` (a fraction of the code's width).
- *
- * The reachable widths are a staircase, because a hole is a whole odd number of modules: on a
- * 29-module code a logo can be 3, 5, 7 or 9 modules wide and nothing in between. We pick the
- * nearest tread rather than the nearest below it, so the slider always moves somewhere, and the
- * readout reports what was actually reached instead of what was asked for.
- */
-export function fitLogo(targetWidth: number, input: Omit<HoleInput, 'coefficient'>): LogoFit {
-	const { modules, version } = input;
-	if (!(targetWidth > 0) || modules <= 0) return NO_LOGO;
-	const target = targetWidth * modules;
+/** The same hole, whichever coefficient produced it. */
+export function sameTread(a: Hole, b: Hole): boolean {
+	return a.hideX === b.hideX && a.hideY === b.hideY && a.logoW === b.logoW && a.logoH === b.logoH;
+}
 
-	let best: LogoFit | null = null;
+/**
+ * Every distinct logo a coefficient can produce on this code, smallest first, each paired with
+ * the smallest coefficient that produces it. The reachable widths are a staircase, because a
+ * hole is a whole odd number of modules: on a 29-module code a logo can be 3, 5, 7 or 9 modules
+ * wide and nothing in between.
+ */
+function allTreads(input: Omit<HoleInput, 'coefficient'>): LogoFit[] {
+	const { modules, version } = input;
+	const out: LogoFit[] = [];
+	if (modules <= 0) return out;
 	for (let i = 1; i <= 100; i++) {
 		const coefficient = i / 100;
 		const hole = predictHole({ ...input, coefficient });
-		if (hole.logoW <= 0) continue;
-		// Equal distance keeps the first (smaller) fit; ties go to the safer logo.
-		if (best && Math.abs(hole.logoW - target) >= Math.abs(best.logoW - target)) continue;
-		best = {
+		if (hole.logoW <= 0 || out.some((t) => sameTread(t, hole))) continue;
+		out.push({
 			...hole,
 			coefficient,
 			width: hole.logoW / modules,
 			cover: (hole.hideX * hole.hideY) / budgetModules(modules, version),
 			area: (hole.hideX * hole.hideY) / (modules * modules)
-		};
+		});
 	}
-	return best ?? NO_LOGO;
+	return out.sort((a, b) => a.logoW - b.logoW || a.coefficient - b.coefficient);
+}
+
+/** The tread whose logo width (in modules) is nearest `target`; equal distance keeps the earlier, smaller one, the safer logo. */
+function nearestTread(treads: LogoFit[], target: number): LogoFit | undefined {
+	let best: LogoFit | undefined;
+	for (const t of treads) {
+		if (best && Math.abs(t.logoW - target) >= Math.abs(best.logoW - target)) continue;
+		best = t;
+	}
+	return best;
+}
+
+/**
+ * Find the coefficient whose logo lands nearest `targetWidth` (a fraction of the code's width).
+ *
+ * We pick the nearest tread rather than the nearest below it, so a request always lands
+ * somewhere, and the readout reports what was actually reached instead of what was asked for.
+ */
+export function fitLogo(targetWidth: number, input: Omit<HoleInput, 'coefficient'>): LogoFit {
+	const { modules } = input;
+	if (!(targetWidth > 0) || modules <= 0) return NO_LOGO;
+	return nearestTread(allTreads(input), targetWidth * modules) ?? NO_LOGO;
+}
+
+/**
+ * The sizes the Size slider offers on this code: the treads a width between `LOGO_WIDTH_MIN`
+ * and `LOGO_WIDTH_MAX` can land on, smallest first. The slider steps through these rather than
+ * sliding over a range where most positions change nothing; a tread just outside the range is
+ * kept when it is the nearest answer to a width inside it, exactly as `fitLogo` would choose it.
+ */
+export function logoTreads(input: Omit<HoleInput, 'coefficient'>): LogoFit[] {
+	const all = allTreads(input);
+	const { modules } = input;
+	return all.filter((t) => {
+		const target = Math.min(LOGO_WIDTH_MAX, Math.max(LOGO_WIDTH_MIN, t.width)) * modules;
+		return nearestTread(all, target) === t;
+	});
 }

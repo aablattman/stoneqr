@@ -31,6 +31,8 @@
 const PREFIX = 'lg-';
 /** The clip that holds the drawing inside its own viewBox (the renderer sets overflow visible). */
 const CLIP_ID = 'lgclip';
+/** The clip a cropped logo's wrapper uses; like `CLIP_ID`, it cannot be a prefixed id. */
+const CROP_CLIP_ID = 'lgcrop';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const XLINK_NS = 'http://www.w3.org/1999/xlink';
@@ -177,6 +179,47 @@ export function toDataUrl(svgText: string): string {
 
 function round(v: number): number {
 	return Number(v.toFixed(3));
+}
+
+/**
+ * A prepared logo cut down to a crop, still as a drawing. The original root is nested whole in a
+ * wrapper whose viewBox is the crop, in the inner drawing's own units, and clipped to it: the
+ * renderer sets `overflow="visible"` on whatever root it inlines, so a viewBox alone would let
+ * the rest of the logo spill over the modules. The wrapper carries a width and height equal to
+ * the crop so `new Image()` reports the crop's shape, which is what the hole is cut for.
+ *
+ * `crop` is fractions of the picture (left, top, width, height). The inner root's width and
+ * height are rewritten to its viewBox, so the nested viewport is the whole drawing at 1:1 and
+ * the crop is a plain scaling of the viewBox. A root with no usable size is returned untouched;
+ * nothing prepared here lacks one, and the icons carry theirs.
+ */
+export function cropSvgMarkup(markup: string, crop: { u: number; v: number; w: number; h: number }): string {
+	const open = /<svg\b[^>]*>/i.exec(markup);
+	if (!open) return markup;
+	const attr = (name: string) => new RegExp(`\\s${name}\\s*=\\s*"([^"]*)"`, 'i').exec(open[0])?.[1] ?? null;
+	const box = parseViewBox(attr('viewBox')) ?? parseViewBox(viewBoxFrom(attr('width'), attr('height')));
+	if (!box) return markup;
+	const [, , vw, vh] = box;
+	const x = round(crop.u * vw);
+	const y = round(crop.v * vh);
+	const w = round(crop.w * vw);
+	const h = round(crop.h * vh);
+	if (!(w > 0) || !(h > 0)) return markup;
+	const inner =
+		open[0]
+			.replace(/\s(?:width|height|x|y)\s*=\s*"[^"]*"/gi, '')
+			.replace(/^<svg\b/i, `<svg width="${round(vw)}" height="${round(vh)}"`) +
+		markup.slice(open.index + open[0].length);
+	return (
+		`<svg xmlns="${SVG_NS}" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">` +
+		`<clipPath id="${CROP_CLIP_ID}"><rect x="${x}" y="${y}" width="${w}" height="${h}"/></clipPath>` +
+		`<g clip-path="url(#${CROP_CLIP_ID})">${inner}</g></svg>`
+	);
+}
+
+/** `cropSvgMarkup` for a data URL, base64 in and base64 out, which is the only form the renderer inlines. */
+export function cropSvgDataUrl(dataUrl: string, crop: { u: number; v: number; w: number; h: number }): string {
+	return toDataUrl(cropSvgMarkup(decodeSvgDataUrl(dataUrl), crop));
 }
 
 /* ------------------------------------------------------------------ the DOM half */

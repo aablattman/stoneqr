@@ -6,7 +6,10 @@ import {
 	isLocalRef,
 	sanitiseCssUrls,
 	prefixCssRefs,
-	toDataUrl
+	toDataUrl,
+	cropSvgMarkup,
+	cropSvgDataUrl,
+	decodeSvgDataUrl
 } from '../src/lib/logo-svg';
 
 /**
@@ -132,5 +135,43 @@ describe('toDataUrl', () => {
 		const url = toDataUrl(svg);
 		const bytes = Uint8Array.from(atob(url.split(',')[1]!), (c) => c.charCodeAt(0));
 		expect(new TextDecoder().decode(bytes)).toBe(svg);
+	});
+});
+
+describe('cropSvgMarkup', () => {
+	const logo = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100"><rect width="400" height="100" fill="#123"/></svg>';
+
+	it('wraps the drawing in a viewBox that is the crop, in the drawing\'s own units, and clips to it', () => {
+		const out = cropSvgMarkup(logo, { u: 0.1, v: 0.2, w: 0.25, h: 0.5 });
+		expect(out.startsWith('<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 20 100 50" width="100" height="50">')).toBe(true);
+		expect(out).toContain('<clipPath id="lgcrop"><rect x="40" y="20" width="100" height="50"/></clipPath>');
+		expect(out).toContain('<g clip-path="url(#lgcrop)">');
+		// The original root is nested whole, sized to its own viewBox so the crop is a plain scaling of it.
+		expect(out).toContain('<svg width="400" height="100" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100"><rect');
+		expect(out.endsWith('</svg></g></svg>')).toBe(true);
+	});
+
+	it('reports the crop\'s shape as its intrinsic size, which is what the hole is cut for', () => {
+		const out = cropSvgMarkup(logo, { u: 0, v: 0, w: 0.25, h: 1 });
+		expect(out).toContain('viewBox="0 0 100 100" width="100" height="100"');
+	});
+
+	it('sizes a root with width and height but no viewBox from those', () => {
+		const out = cropSvgMarkup('<svg xmlns="http://www.w3.org/2000/svg" width="10mm" height="5mm"><rect/></svg>', { u: 0.5, v: 0, w: 0.5, h: 1 });
+		// 10 mm is 37.795 px.
+		expect(out).toMatch(/^<svg [^>]*viewBox="18\.898 0 18\.898 18\.898"/);
+		expect(out).toContain('<svg width="37.795" height="18.898" xmlns=');
+	});
+
+	it('leaves a drawing with no usable size alone rather than guessing', () => {
+		const bare = '<svg xmlns="http://www.w3.org/2000/svg"><rect/></svg>';
+		expect(cropSvgMarkup(bare, { u: 0.1, v: 0.1, w: 0.5, h: 0.5 })).toBe(bare);
+		expect(cropSvgMarkup('not svg', { u: 0, v: 0, w: 1, h: 1 })).toBe('not svg');
+	});
+
+	it('round-trips through a base64 data URL, the only form the renderer inlines', () => {
+		const url = cropSvgDataUrl(toDataUrl(logo), { u: 0, v: 0, w: 0.5, h: 0.5 });
+		expect(url.startsWith('data:image/svg+xml;base64,')).toBe(true);
+		expect(decodeSvgDataUrl(url)).toContain('viewBox="0 0 200 50"');
 	});
 });

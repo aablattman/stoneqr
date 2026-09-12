@@ -11,6 +11,7 @@
 	import { GLYPHS, glyphDataUrl, glyphName, glyphSvg, type Glyph } from '$lib/glyphs';
 	import ColourField from '$lib/components/ColourField.svelte';
 	import CropBox from '$lib/components/CropBox.svelte';
+	import { placementModel } from '$lib/crop';
 	import DropTile from '$lib/components/DropTile.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Slider from '$lib/components/Slider.svelte';
@@ -100,6 +101,16 @@
 		resetCrop();
 	}
 
+	/** The box on the thumbnail is the three placement fields, read and written in place; see `crop.ts`. */
+	const cropModel = placementModel(
+		() => ({ zoom: design.halftoneZoom, offsetX: design.halftoneOffsetX, offsetY: design.halftoneOffsetY }),
+		(p) => {
+			if (p.zoom !== undefined) design.halftoneZoom = p.zoom;
+			if (p.offsetX !== undefined) design.halftoneOffsetX = p.offsetX;
+			if (p.offsetY !== undefined) design.halftoneOffsetY = p.offsetY;
+		}
+	);
+
 	function resetCrop() {
 		design.halftoneZoom = 1;
 		design.halftoneOffsetX = 0;
@@ -175,12 +186,7 @@
 				<!-- The box is the data area on the picture; dragging it is the Across and Down sliders,
 				     and its corner is the Zoom slider. The sliders stay for precision, the two offsets
 				     in Advanced only, since the box says the same thing in a picture. -->
-				<CropBox
-					src={design.halftoneImage ?? ''}
-					bind:zoom={design.halftoneZoom}
-					bind:offsetX={design.halftoneOffsetX}
-					bind:offsetY={design.halftoneOffsetY}
-				/>
+				<CropBox src={design.halftoneImage ?? ''} model={cropModel} />
 				<Slider label="Zoom" bind:value={design.halftoneZoom} min={IMAGE_ZOOM_MIN} max={IMAGE_ZOOM_MAX} step={0.05} reset={1} format={(v) => `${v.toFixed(2)}×`} />
 				{#if advanced}
 					<Slider label="Across" bind:value={design.halftoneOffsetX} min={-IMAGE_OFFSET_MAX} max={IMAGE_OFFSET_MAX} step={0.01} reset={0} format={pct} />

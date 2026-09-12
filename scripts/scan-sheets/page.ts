@@ -29,6 +29,8 @@ import {
 import { renderStyled, type StyleOptions } from '../../apps/site/src/lib/styled';
 import { fitLogo, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '../../apps/site/src/lib/logo-size';
 import { prepareSvgLogo } from '../../apps/site/src/lib/logo-svg';
+import { cropAspect, cropLogo } from '../../apps/site/src/lib/logo-crop';
+import type { CropRect } from '../../apps/site/src/lib/crop';
 import { svgToCanvas, canvasToPngBlob, canvasImageData } from '../../apps/site/src/lib/svg-raster';
 import { loadImageRaster, rasterToPngBlob } from '../../apps/site/src/lib/halftone';
 import { GLYPHS, glyphDataUrl } from '../../apps/site/src/lib/glyphs';
@@ -74,6 +76,8 @@ interface StyledSpec {
 	logoWidth?: number | 'widest';
 	/** False paints the logo over the modules instead of clearing them. */
 	logoKnockout?: boolean;
+	/** The part of the picture that goes in the code, as the Logo panel's crop box sets it; the hole follows its shape. */
+	logoCrop?: CropRect;
 	frame?: string;
 }
 interface HalftoneSpec {
@@ -168,7 +172,15 @@ const SECTIONS: Section[] = [
 		items: [
 			styled('C1', 30, 'Logo 20% width · 30 mm', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 0.2, logoKnockout: true }),
 			styled('C2', 50, 'Logo 20% width · 50 mm', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 0.2, logoKnockout: true }),
-			styled('C3', 30, 'Logo as wide as the site allows', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 'widest', logoKnockout: true })
+			styled('C3', 30, 'Logo as wide as the site allows', 'classic', { ecc: 'H', logo: 'favicon', logoWidth: 'widest', logoKnockout: true }),
+			// The PNG cut down through the crop box's canvas path: zoomed 1.6× on the centre of the mark.
+			styled('C4', 30, 'Logo cropped, zoomed 1.6× · 30 mm', 'classic', {
+				ecc: 'H',
+				logo: 'favicon',
+				logoWidth: 0.2,
+				logoKnockout: true,
+				logoCrop: { u: 0.1875, v: 0.1875, w: 0.625, h: 0.625 }
+			})
 		]
 	},
 	{
@@ -287,11 +299,19 @@ const SECTIONS: Section[] = [
 		code: 'M',
 		title: 'SVG logos, rebuilt on upload',
 		watch:
-			'The same mark as row C, uploaded as SVG and put through the real preparation; the site warns above 15% hidden and blocks above 20%. M3 is a wide wordmark, which should sit in a wide hole rather than a square one. The sheet prints a raster of each, as every styled row does; that an SVG stays vector in the SVG download is checked by "bun run logo-fixtures".',
+			'The same mark as row C, uploaded as SVG and put through the real preparation; the site warns above 15% hidden and blocks above 20%. M3 is a wide wordmark, which should sit in a wide hole rather than a square one. M4 is that wordmark cropped to a square around its mark, so its hole should be square and the rest of the wordmark must not show. The sheet prints a raster of each, as every styled row does; that an SVG stays vector in the SVG download is checked by "bun run logo-fixtures".',
 		items: [
 			styled('M1', 30, 'SVG mark · 30 mm', 'classic', { ecc: 'H', logo: 'favicon-svg', logoWidth: 0.2, logoKnockout: true }),
 			styled('M2', 50, 'SVG mark · 50 mm', 'classic', { ecc: 'H', logo: 'favicon-svg', logoWidth: 0.2, logoKnockout: true }),
-			styled('M3', 30, 'Wide wordmark · 30 mm', 'classic', { ecc: 'H', logo: 'wordmark-svg', logoWidth: 0.28, logoKnockout: true })
+			styled('M3', 30, 'Wide wordmark · 30 mm', 'classic', { ecc: 'H', logo: 'wordmark-svg', logoWidth: 0.28, logoKnockout: true }),
+			// The same wordmark cropped to a square around its mark through the vector wrapper: the hole should be square.
+			styled('M4', 30, 'Wordmark cropped to its mark · 30 mm', 'classic', {
+				ecc: 'H',
+				logo: 'wordmark-svg',
+				logoWidth: 0.2,
+				logoKnockout: true,
+				logoCrop: { u: 0.075, v: 0.125, w: 0.1875, h: 0.75 }
+			})
 		]
 	},
 	{
@@ -465,11 +485,14 @@ async function renderItem(item: Item, pictures: Pictures): Promise<Rendered> {
 	if (spec.kind === 'styled') {
 		const qr = encode(spec.payload, { ecc: spec.ecc, minVersion: 2 });
 		const look = LOOKS.find((l) => l.id === spec.look)!;
-		const pic = !spec.logo
+		const whole = !spec.logo
 			? undefined
 			: typeof spec.logo === 'object'
 				? { url: logoIconDataUrl(LOGO_ICONS.find((i) => i.id === (spec.logo as { icon: string }).icon)!, spec.fg ?? '#000000'), aspect: 1 }
 				: pictures[spec.logo];
+		// Cropped exactly as the Preview crops it: a drawing stays a drawing, a raster goes through a canvas.
+		const pic =
+			whole && spec.logoCrop ? { url: await cropLogo(whole.url, spec.logoCrop), aspect: cropAspect(spec.logoCrop, whole.aspect) } : whole;
 		const holeInput = {
 			modules: qr.size,
 			version: qr.version,
@@ -515,7 +538,9 @@ async function renderItem(item: Item, pictures: Pictures): Promise<Rendered> {
 			version: qr.version,
 			decoded: check.ok,
 			// The thresholds are in the section's note, so the caption keeps to the measurements.
-			detail: fit ? `logo ${Math.round(fit.width * 100)}% wide, hides ${Math.round(fit.cover * 100)}%` : undefined,
+			detail: fit
+				? `logo ${Math.round(fit.width * 100)}% wide, hides ${Math.round(fit.cover * 100)}%${spec.logoCrop ? `, cropped to ${fit.hideX}×${fit.hideY}` : ''}`
+				: undefined,
 			note: '',
 			png
 		};

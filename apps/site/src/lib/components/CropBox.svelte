@@ -1,21 +1,24 @@
 <script lang="ts">
 	/**
-	 * The picture with the data area drawn over it as a box. Drag the box to choose what shows in
-	 * the code; drag its corner to zoom. The box is the engine's placement run backwards
-	 * (`lib/crop.ts`), so what it frames is exactly what the code blends in.
+	 * The picture with a box drawn over it. Drag the box to choose what shows in the code; drag
+	 * its corner to zoom or reshape it. The box is whatever the `model` says it is: for Artistic
+	 * QR the engine's placement run backwards (`lib/crop.ts`), for the logo the free crop in
+	 * `lib/logo-crop.ts`. The component keeps no state of its own; every gesture is a call on the
+	 * model, which writes the design's fields, and the box is read back from them.
 	 *
 	 * The stage is a square with the picture contain-fitted at 72% of it, so a zoomed-out box
 	 * (paper around the picture) still has room to show. Keyboard: the arrow keys move the box,
 	 * plus and minus zoom; the sliders beside it stay the precise route.
 	 */
-	import { cropRect, offsetsFor, zoomForBox, clampZoom } from '$lib/crop';
+	import type { CropModel } from '$lib/crop';
 
 	let {
 		src,
-		zoom = $bindable(),
-		offsetX = $bindable(),
-		offsetY = $bindable()
-	}: { src: string; zoom: number; offsetX: number; offsetY: number } = $props();
+		model,
+		/** True while the crop is not in force (a disabled fieldset does not stop pointer or keyboard gestures on its own). */
+		disabled = false,
+		label = 'Crop. Drag the box to choose what shows in the code, or use the arrow keys; drag its corner or press plus and minus to zoom.'
+	}: { src: string; model: CropModel; disabled?: boolean; label?: string } = $props();
 
 	const FIT = 0.72;
 	let iw = $state(0);
@@ -34,7 +37,7 @@
 	/** The box's rectangle inside the stage, as fractions of the stage. */
 	const box = $derived.by(() => {
 		if (!pic) return null;
-		const r = cropRect(pic.aspect, zoom, offsetX, offsetY);
+		const r = model.rect(pic.aspect);
 		return { left: pic.x + r.u * pic.w, top: pic.y + r.v * pic.h, width: r.w * pic.w, height: r.h * pic.h, r };
 	});
 
@@ -43,7 +46,7 @@
 	let drag = $state<Drag | null>(null);
 
 	function start(e: PointerEvent, mode: Drag['mode']) {
-		if (!box || e.button !== 0) return;
+		if (!box || e.button !== 0 || disabled) return;
 		e.preventDefault();
 		e.stopPropagation();
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -56,13 +59,13 @@
 		const du = (e.clientX - drag.x0) / s.width / pic.w;
 		const dv = (e.clientY - drag.y0) / s.height / pic.h;
 		if (drag.mode === 'move') {
-			({ offsetX, offsetY } = offsetsFor(pic.aspect, zoom, drag.u0 + du, drag.v0 + dv));
+			model.moveTo(pic.aspect, drag.u0 + du, drag.v0 + dv);
 		} else {
 			// The corner follows whichever axis the pointer moved more along, relative to the box.
+			// The top-left corner is the one from the start of the drag, so only the corner being
+			// dragged moves.
 			const byWidth = Math.abs(du / drag.w0) >= Math.abs(dv / drag.h0);
-			zoom = byWidth ? zoomForBox(pic.aspect, drag.w0 + du, 'w') : zoomForBox(pic.aspect, drag.h0 + dv, 'h');
-			// Keep the top-left corner where it was, so only the corner being dragged moves.
-			({ offsetX, offsetY } = offsetsFor(pic.aspect, zoom, drag.u0, drag.v0));
+			model.resizeTo(pic.aspect, drag.u0, drag.v0, drag.w0 + du, drag.h0 + dv, byWidth ? 'w' : 'h', e.shiftKey);
 		}
 	}
 	function end() {
@@ -70,7 +73,7 @@
 	}
 
 	function key(e: KeyboardEvent) {
-		if (!pic || !box) return;
+		if (!pic || !box || disabled) return;
 		const step = e.shiftKey ? 0.1 : 0.02;
 		let du = 0;
 		let dv = 0;
@@ -89,17 +92,17 @@
 				break;
 			case '+':
 			case '=':
-				zoom = clampZoom(zoom + 0.05);
+				model.zoomStep(pic.aspect, 1);
 				break;
 			case '-':
 			case '_':
-				zoom = clampZoom(zoom - 0.05);
+				model.zoomStep(pic.aspect, -1);
 				break;
 			default:
 				return;
 		}
 		e.preventDefault();
-		if (du || dv) ({ offsetX, offsetY } = offsetsFor(pic.aspect, zoom, box.r.u + du, box.r.v + dv));
+		if (du || dv) model.moveTo(pic.aspect, box.r.u + du, box.r.v + dv);
 	}
 
 	const pct = (f: number) => `${(f * 100).toFixed(3)}%`;
@@ -107,19 +110,12 @@
 
 <!--
   The stage takes focus and the arrow keys because it is the thing being adjusted; the linter
-  cannot know that the Zoom, Across, and Down sliders beside it are the assistive route and that
-  this is the pointer and keyboard convenience on top. The box and its handle are pointer
-  surfaces only, hidden from the accessibility tree, so they carry no role of their own.
+  cannot know that the sliders beside it are the assistive route and that this is the pointer
+  and keyboard convenience on top. The box and its handle are pointer surfaces only, hidden from
+  the accessibility tree, so they carry no role of their own.
 -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
-<div
-	bind:this={stage}
-	class="crop-stage"
-	role="group"
-	aria-label="Crop. Drag the box to choose what shows in the code, or use the arrow keys; drag its corner or press plus and minus to zoom."
-	tabindex="0"
-	onkeydown={key}
->
+<div bind:this={stage} class="crop-stage" role="group" aria-label={label} aria-disabled={disabled} tabindex={disabled ? -1 : 0} onkeydown={key}>
 	{#if pic}
 		<img
 			{src}

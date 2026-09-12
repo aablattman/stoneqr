@@ -221,6 +221,16 @@ warning line has been printed and scanned. A colour print is still owed for `L2`
 - A round or rounded knockout. The library only clears a rectangle; a shaped hole means drawing
   the modules ourselves, which is the same work as leaving the library.
 
+### Phase 4: the crop, and the slider that steps — built 2026-09-12
+
+Not in the original plan. Garrett found the Size slider "pretty much unusable" (four live
+positions on a version 3 code, the rest dead travel) and asked for a zoom and crop bounded to
+the blank space. Recorded in `docs/ui-refresh.md` §8m: the Size slider is now one position per
+reachable tread (`logoTreads`), the crop box on the logo is the blank space itself, free in
+shape and bounded to the picture, the hole follows the crop's shape, and the renderer receives
+the cropped picture (a canvas PNG for a raster, a clipped vector wrapper for an SVG). Rows C4 and
+M4 joined the sheet; the "later" item about a shaped knockout stands.
+
 ## 3. Risks and decisions
 
 - **Library semantics.** The port in `logo-size.ts` is pinned to measured values, so a
