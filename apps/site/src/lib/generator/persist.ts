@@ -280,3 +280,52 @@ export async function decodeHash(hash: string): Promise<Saved | null> {
 export function isDesignHash(hash: string): boolean {
 	return hash.startsWith(HASH_PREFIX) || hash.startsWith(HASH_PREFIX_PLAIN);
 }
+
+// ---- address links ----------------------------------------------------------------------------
+
+/**
+ * The address link: `stoneqr.app/#url=` and one percent-encoded web address. SignUpCity's share
+ * bar sends one (its plan.md C12 holds the other side of this contract), and anyone can write one
+ * by hand. It is a fragment for the same reason a share link is: the address never reaches a
+ * server.
+ *
+ * It means something narrower than a share link. A share link is somebody else's whole design, so
+ * it replaces this one and drops the saved pictures. An address link is only "make a code for this
+ * address": the content becomes that address and everything else stays, so an assistant who set up
+ * the company colours and logo here last week arrives to find them still in place.
+ */
+export const ADDRESS_PREFIX = '#url=';
+/** Longer than any address a person would print, and well inside what a code can hold. */
+export const ADDRESS_MAX = 2048;
+
+/** The web address in an address link, or null when the fragment is not one or does not hold a usable address. */
+export function addressFromHash(hash: string): string | null {
+	if (!hash.startsWith(ADDRESS_PREFIX)) return null;
+	let address: string;
+	try {
+		address = decodeURIComponent(hash.slice(ADDRESS_PREFIX.length)).trim();
+	} catch {
+		return null;
+	}
+	if (!address || address.length > ADDRESS_MAX) return null;
+	try {
+		const parsed = new URL(address);
+		// Only somewhere a phone camera should open. A `javascript:` or `data:` address in a code is
+		// a trap for whoever scans it, and a link is one edit away from carrying one.
+		if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return null;
+		return parsed.href;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Point the design at an address and change nothing else. The dormant dynamic-link field is
+ * cleared, because `buildPayload` prefers it to the typed content and a stale one would encode the
+ * wrong address with the right one on screen.
+ */
+export function applyAddress(design: Pick<Design, 'type' | 'fields' | 'shortUrl'>, address: string): void {
+	design.type = 'url';
+	design.fields.url.url = address;
+	design.shortUrl = null;
+}

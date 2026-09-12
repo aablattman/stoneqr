@@ -247,6 +247,13 @@ All routes prerendered. Each SEO page carries a short, genuinely useful explaine
 - StoneQR reads `short`, sets the payload to it, and shows "This code is editable and tracked in your SignUpCity account."
 - StoneQR never receives a token and stores nothing. If SignUpCity is down, the button simply links out; static generation is unaffected.
 
+### Address link from SignUpCity (built 2026-09-12)
+
+- SignUpCity's share bar, under its plain QR code, links to `https://stoneqr.app/#url=<encodeURIComponent(public address)>` in a new tab. SignUpCity's `plan.md` C12 holds its side.
+- `addressFromHash` in `apps/site/src/lib/generator/persist.ts` reads it: an `http:` or `https:` address of at most 2,048 characters, or nothing. Anything else (`javascript:`, `data:`, a malformed escape) is ignored and the page loads as usual.
+- `applyAddress` sets the type to URL and the content to that address, clears the dormant `shortUrl` (which `buildPayload` would otherwise encode instead), and changes nothing else. The saved style, the logo and the Artistic QR picture all stay, which is the difference from a `#1.` share link: that is somebody else's whole design and drops the saved pictures. The fragment is then stripped from the address bar.
+- Being a fragment, the address never reaches a server, so the promise that nothing typed leaves the browser holds on both sides. Anyone can write such a link by hand; it can do no more than typing the address into the field.
+
 ---
 
 ## 10. Repository layout
@@ -312,7 +319,7 @@ The QR audience is broad, so this launch looks different from SignUpCity's.
 3. **Reddit.** r/smallbusiness, r/weddingplanning, r/Teachers, r/eventplanning, r/ExecutiveAssistants: answer the recurring "which QR generator won't expire" question with the tool, not an ad.
 4. **The scan matrix as content.** "We printed our codes at five sizes and scanned them with three phones; here is what worked" is a link-worthy page and a trust signal.
 5. **Open-source channels.** npm package, GitHub topics, a small entry on awesome-lists for QR and Svelte.
-6. **Cross-link.** SignUpCity share panels offer a StoneQR code; StoneQR's footer says "by the makers of SignUpCity."
+6. **Cross-link.** SignUpCity share panels offer a StoneQR code, with the address filled in through the address link above; StoneQR's footer says "by the makers of SignUpCity."
 
 Success in the first 90 days: 5,000 codes generated (counted client-side as a single anonymous page event, no payload data), three of the SEO routes on page one for a long-tail query, one external article or forum thread recommending it unprompted, zero support requests about a code that stopped working.
 

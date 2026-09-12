@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PERSISTED, snapshot, compact, apply, encodeHash, decodeHash, isDesignHash, type Saved } from '$lib/generator/persist';
+import { PERSISTED, snapshot, compact, apply, encodeHash, decodeHash, isDesignHash, addressFromHash, applyAddress, ADDRESS_MAX, type Saved } from '$lib/generator/persist';
 import { buildPayload, defaultFields, type Design } from '$lib/generator/state.svelte';
 
 /** A plain stand-in for Design with the persisted fields at their defaults. */
@@ -142,5 +142,70 @@ describe('persist', () => {
 		expect(await decodeHash('#generator')).toBeNull();
 		expect(await decodeHash('#1.not-base64-deflate!!')).toBeNull();
 		expect(isDesignHash('#1')).toBe(false);
+	});
+});
+
+describe('address links', () => {
+	// The fragment SignUpCity's share bar writes: `encodeURIComponent` of the sheet's public address.
+	const fromSignUpCity = '#url=' + encodeURIComponent('https://signupcity.app/s/bcdf6789');
+
+	it('reads the address SignUpCity sends', () => {
+		expect(addressFromHash(fromSignUpCity)).toBe('https://signupcity.app/s/bcdf6789');
+	});
+
+	it('keeps a query and a fragment inside the address', () => {
+		const address = 'https://example.com/p/a?ref=qr&x=1#top';
+		expect(addressFromHash('#url=' + encodeURIComponent(address))).toBe(address);
+	});
+
+	it('is not mistaken for a share link, or a share link for it', () => {
+		expect(isDesignHash(fromSignUpCity)).toBe(false);
+		expect(addressFromHash('#1.abc')).toBeNull();
+		expect(addressFromHash('#0.abc')).toBeNull();
+		expect(addressFromHash('#generator')).toBeNull();
+		expect(addressFromHash('')).toBeNull();
+	});
+
+	it('refuses anything a phone camera should not open', () => {
+		for (const address of ['javascript:alert(1)', 'data:text/html,hi', 'mailto:a@example.com', 'file:///etc/passwd']) {
+			expect(addressFromHash('#url=' + encodeURIComponent(address)), address).toBeNull();
+		}
+	});
+
+	it('refuses an empty, malformed, or oversized address', () => {
+		expect(addressFromHash('#url=')).toBeNull();
+		expect(addressFromHash('#url=%20%20')).toBeNull();
+		expect(addressFromHash('#url=not%20a%20url')).toBeNull();
+		expect(addressFromHash('#url=%E0%A4%A')).toBeNull();
+		const long = 'https://example.com/' + 'a'.repeat(ADDRESS_MAX);
+		expect(addressFromHash('#url=' + encodeURIComponent(long))).toBeNull();
+	});
+
+	it('sets the content and keeps the rest of the design', () => {
+		const d = fake();
+		d.type = 'wifi';
+		d.fields.wifi.ssid = 'Office';
+		d.fg = '#1f6f63';
+		d.logoName = 'company.png';
+		d.frameEnabled = true;
+		d.halftone = true;
+		d.halftoneImageName = 'team.jpg';
+		const before = snapshot(d);
+
+		applyAddress(d, 'https://signupcity.app/s/bcdf6789');
+
+		expect(d.type).toBe('url');
+		expect(d.fields.url.url).toBe('https://signupcity.app/s/bcdf6789');
+		// Everything but the type and the address is as it was, the other types' typed fields included.
+		const after = snapshot(d);
+		expect({ ...after, type: before.type, fields: { ...after.fields, url: before.fields!.url } }).toEqual(before);
+	});
+
+	it('clears a dormant dynamic link, which would otherwise be what the code encodes', () => {
+		const d = fake();
+		d.shortUrl = 'https://su.city/q/old';
+		applyAddress(d, 'https://signupcity.app/s/bcdf6789');
+		expect(d.shortUrl).toBeNull();
+		expect(buildPayload(d.type, d.fields, d.shortUrl).payload).toBe('https://signupcity.app/s/bcdf6789');
 	});
 });

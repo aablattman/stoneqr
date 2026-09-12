@@ -1,6 +1,6 @@
 # StoneQR
 
-Free, open-source (MIT), browser-only QR code generator. Brand: StoneQR at stoneqr.app. Tagline: "QR codes set in stone. Generated in your browser, never expire." Sibling of the private SignUpCity product. The dynamic-code hand-off to SignUpCity is shelved as of 2026-09-05 (the link service is on the back burner): the export panel's "Make it editable and trackable" section is removed, and the site's copy no longer says StoneQR offers one; the `?short=` return leg and the ContentForm notice remain dormant for its return. StoneQR itself has no server, no accounts, no database.
+Free, open-source (MIT), browser-only QR code generator. Brand: StoneQR at stoneqr.app. Tagline: "QR codes set in stone. Generated in your browser, never expire." Sibling of the private SignUpCity product. The dynamic-code hand-off to SignUpCity is shelved as of 2026-09-05 (the link service is on the back burner): the export panel's "Make it editable and trackable" section is removed, and the site's copy no longer says StoneQR offers one; the `?short=` return leg and the ContentForm notice remain dormant for its return. The one live link from SignUpCity is the address link (`stoneqr.app/#url=<encoded address>`, `plan.md` "Address link from SignUpCity"): `addressFromHash` and `applyAddress` in `persist.ts` set the content to that address and keep the rest of the saved design, pictures included, so never route it through the `#1.` share-link path, which drops them. StoneQR itself has no server, no accounts, no database.
 
 ## Rules
 

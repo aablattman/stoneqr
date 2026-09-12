@@ -32,7 +32,7 @@
 	import { page } from '$app/state';
 	import type { PayloadType } from '@stoneqr/engine/payloads';
 	import Icon from '$lib/components/Icon.svelte';
-	import { snapshot, compact, writeSaved, writeImage, clearSaved, clearImages, decodeHash, isDesignHash } from './persist';
+	import { snapshot, compact, writeSaved, writeImage, clearSaved, clearImages, decodeHash, isDesignHash, addressFromHash, applyAddress } from './persist';
 	import { defaults } from './defaults';
 	import { logoIconByName } from '$lib/logo-icons';
 	import ContentForm from './ContentForm.svelte';
@@ -102,9 +102,17 @@
 	 * carries no pictures, so the ones saved here are dropped rather than attached to someone
 	 * else's design. Otherwise the saved pictures come back from IndexedDB. The fragment is then
 	 * removed so the address bar does not keep describing a design that has since been edited.
+	 *
+	 * An address link (`#url=`) is the exception: it sets the content to one web address and keeps
+	 * the rest of the saved design, pictures included, so it falls through to the restore below.
 	 */
 	async function restoreImagesOrLink() {
 		const hash = location.hash;
+		const address = addressFromHash(hash);
+		if (address) {
+			applyAddress(design, address);
+			history.replaceState(null, '', location.pathname + location.search);
+		}
 		if (isDesignHash(hash)) {
 			const saved = await decodeHash(hash);
 			if (saved && apply(design, saved)) {
