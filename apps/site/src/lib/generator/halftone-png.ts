@@ -1,5 +1,5 @@
 /**
- * How big a Photo QR PNG comes out, and the dpi that makes it print at the size asked for.
+ * How big a Artistic QR PNG comes out, and the dpi that makes it print at the size asked for.
  *
  * The raster is capped at 4096 px a side (about 17 megapixels): the picture is at most 1024 px to
  * begin with, so more pixels add nothing, and past this PNG encoding alone takes seconds on a

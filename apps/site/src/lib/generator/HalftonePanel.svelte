@@ -120,7 +120,7 @@
 	const pct = (v: number) => `${Math.round(v * 100)}%`;
 </script>
 
-<SectionHeader title="Photo QR" collapsible bind:open={panelOpen} {summary} controls="photo-body" />
+<SectionHeader title="Artistic QR" collapsible bind:open={panelOpen} {summary} controls="photo-body" />
 
 {#if panelOpen}
 	<div id="photo-body" class="mt-4 grid gap-5">
@@ -129,8 +129,8 @@
 			<DropTile
 				src={design.halftoneImage ?? ''}
 				name={design.halftoneImageName}
-				label="Drop a picture here, or choose a file"
-				hint="Blend a photo or a logo into the code itself. It stays in your browser."
+				label="Drop a photo here, or choose a file"
+				hint="Your picture runs through the whole code, woven into its squares. It stays in your browser."
 				error={imageError}
 				ariaLabel="Upload a photo to blend into the code"
 				onfile={onImage}
@@ -163,6 +163,9 @@
 						{/each}
 					</div>
 				</div>
+				<!-- The two picture panels answer different wishes; the one that sounds like "a picture
+				     in my QR code" to most people is the logo, so this one says where that lives. -->
+				<p class="hint">Just want your logo in the middle of an ordinary code? Use Logo, above.</p>
 			{/if}
 		</div>
 
@@ -234,9 +237,9 @@
 			{/if}
 			{#if design.halftoneOverridesStyle}
 				<p class="notice notice-info">
-					The photo replaces most Style settings. Module and corner shapes, the corner colour, gradients, the logo, and the frame
-					are ignored while a photo is blended in; Code and Background still apply, and colour the dots and the paper.
-					Turn the photo off to use the rest.
+					Artistic QR replaces most Style settings. Module and corner shapes, the corner colour, gradients, the logo, and the
+					frame are ignored while a picture is blended in; Code and Background still apply, and colour the dots and the paper.
+					Turn the blend off to use the rest.
 				</p>
 			{/if}
 		{/if}
@@ -247,7 +250,7 @@
 			{:else}
 				The code is made larger and sturdier so the picture shows through.
 			{/if}
-			Picture codes download as PNG or SVG.
+			Artistic QR codes download as PNG or SVG.
 			{#if !advanced}Advanced adds dot size, fade, and contrast for a photo that is hard to read in print.{/if}
 		</p>
 	</div>

@@ -11,7 +11,7 @@ export const APP_SCHEMA: Record<string, unknown> = {
 	name: SITE.name,
 	url: `${SITE.url}/`,
 	description:
-		'Free QR code generator that runs entirely in the browser. No sign-up, no expiry, nothing uploaded. Vector SVG, PDF, and EPS exports, a print-size calculator, logos, Photo QR, bulk generation, and a decode check before every download.',
+		'Free QR code generator that runs entirely in the browser. No sign-up, no expiry, nothing uploaded. Vector SVG, PDF, and EPS exports, a print-size calculator, logos, artistic QR codes, bulk generation, and a decode check before every download.',
 	applicationCategory: 'UtilitiesApplication',
 	operatingSystem: 'Any',
 	browserRequirements: 'Requires JavaScript',
@@ -23,8 +23,8 @@ export const APP_SCHEMA: Record<string, unknown> = {
 		'URL, text, WiFi, vCard, MeCard, email, SMS, phone, calendar event, and location codes',
 		'SVG, PDF, EPS, and PNG export with real millimetre dimensions',
 		'Print-size and scan-distance calculator',
-		'Logo with coverage cap and automatic error correction',
-		'Photo QR: a picture blended into the modules',
+		'Logo in the middle with clear space, a coverage cap, and automatic error correction',
+		'Artistic QR: a photo or shape blended through the whole code',
 		'Bulk generation from CSV with Avery label sheets',
 		'Decode check before every download'
 	]

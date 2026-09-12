@@ -44,14 +44,14 @@
 	);
 	const eccs: Ecc[] = ['L', 'M', 'Q', 'H'];
 
-	const halftoneOnly = 'Photo QR downloads as PNG or SVG';
-	/** The Photo QR PNG's pixel size and the dpi that prints it at the chosen width (see `halftone-png.ts`). */
+	const halftoneOnly = 'Artistic QR downloads as PNG or SVG';
+	/** The Artistic QR PNG's pixel size and the dpi that prints it at the chosen width (see `halftone-png.ts`). */
 	const halftonePng = $derived(
 		design.encoded && design.halftoneActive ? halftonePngSize(design.encoded.size + 2 * design.quietZone, design.widthMm, design.dpi) : null
 	);
 	/** Side of the PNG the button will produce, so Basic can show it instead of a dpi figure. */
 	const pngPx = $derived(halftonePng ? halftonePng.widthPx : Math.round((artWidthMm / 25.4) * design.dpi));
-	/** What the PNG ticket says: the dpi the file will carry, which differs from the setting only when the Photo QR cap held. */
+	/** What the PNG ticket says: the dpi the file will carry, which differs from the setting only when the Artistic QR cap held. */
 	const pngDpiLabel = $derived(halftonePng?.capped ? `${Math.round(halftonePng.dpi)} dpi` : `${design.dpi} dpi`);
 
 	let busy = $state('');
@@ -389,7 +389,7 @@
 						step="1"
 						bind:value={design.minVersion}
 						disabled={design.halftoneActive}
-						title={design.halftoneActive ? 'Photo QR sets its own minimum version' : ''}
+						title={design.halftoneActive ? 'Artistic QR sets its own minimum version' : ''}
 					/>
 				</div>
 				<div class="field col-span-2 xl:col-span-1">
@@ -467,7 +467,7 @@
 				</select>
 				<p class="hint">
 					Makes a <span class="num">{pngPx} px</span> image at this print size.
-					{#if halftonePng?.capped}Photo QR stops at 4096 px a side, so this file carries <span class="num">{Math.round(halftonePng.dpi)} dpi</span> and still prints at the width above.{/if}
+					{#if halftonePng?.capped}Artistic QR stops at 4096 px a side, so this file carries <span class="num">{Math.round(halftonePng.dpi)} dpi</span> and still prints at the width above.{/if}
 				</p>
 			</div>
 		{:else}

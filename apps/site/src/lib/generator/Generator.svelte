@@ -34,8 +34,10 @@
 	import Icon from '$lib/components/Icon.svelte';
 	import { snapshot, compact, writeSaved, writeImage, clearSaved, clearImages, decodeHash, isDesignHash } from './persist';
 	import { defaults } from './defaults';
+	import { logoIconByName } from '$lib/logo-icons';
 	import ContentForm from './ContentForm.svelte';
 	import Preview from './Preview.svelte';
+	import LogoPanel from './LogoPanel.svelte';
 	import StylePanel from './StylePanel.svelte';
 	import HalftonePanel from './HalftonePanel.svelte';
 	import ExportPanel from './ExportPanel.svelte';
@@ -107,8 +109,12 @@
 			const saved = await decodeHash(hash);
 			if (saved && apply(design, saved)) {
 				design.logo = undefined;
-				design.logoName = '';
-				design.logoAspect = 1;
+				// A built-in icon is a name rather than a picture, so it travels: the Logo panel
+				// draws it again from `logoName`. Anything else by that name was a file, and stays behind.
+				if (!logoIconByName(design.logoName)) {
+					design.logoName = '';
+					design.logoAspect = 1;
+				}
 				design.halftoneImage = undefined;
 				design.halftoneImageName = '';
 				design.halftone = false;
@@ -154,7 +160,7 @@
 			},
 			(e: unknown) => {
 				if (!dataUrl) return;
-				const what = key === 'logo' ? 'the logo' : 'the Photo QR picture';
+				const what = key === 'logo' ? 'the logo' : 'the Artistic QR picture';
 				const full = /quota/i.test(e instanceof Error ? e.message + e.name : String(e));
 				storageNote = `This browser could not keep ${what} for next time${full ? ': its storage is full' : ''}. Everything else is saved as you work; download a design file from Saved to keep the picture.`;
 			}
@@ -217,7 +223,7 @@
 </div>
 
 <!--
-  Below lg this is one column and the order is Content, Preview, Style, Photo QR, Size and
+  Below lg this is one column and the order is Content, Preview, Logo, Style, Artistic QR, Size and
   download: someone on a phone meets the form they have to fill in before the card that tells
   them to fill it in. The left column is `display: contents` there, so its two sheets take part
   in the single-column order individually; at lg it becomes a normal block and they stack in the
@@ -236,6 +242,8 @@
 			<ContentForm {design} {pristine} onstartover={startOver} {savedCount} onsaved={() => (savedOpen = true)} />
 		</div>
 		<div class="sheet order-3 p-5 lg:p-6">
+			<LogoPanel {design} {advanced} />
+			<hr class="rule my-6" />
 			<StylePanel {design} open={styleOpen} {advanced} />
 			<hr class="rule my-6" />
 			<HalftonePanel {design} open={photoOpen || design.halftoneActive} {advanced} />

@@ -7,7 +7,7 @@
  * keeps the site's promise that nothing typed leaves the browser: the link carries the settings
  * and the typed content to whoever it is given to, and to no one else.
  *
- * Pictures (the logo and the Photo QR source) are data URLs of up to a few megabytes. They are
+ * Pictures (the logo and the Artistic QR source) are data URLs of up to a few megabytes. They are
  * kept in IndexedDB beside the record rather than in it, because localStorage's quota is about
  * 5 MB and a single failed write would drop the whole design; and they are left out of the share
  * link, which says so.

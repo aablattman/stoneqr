@@ -841,6 +841,75 @@ so in plain words ("The picture is faint at this setting"), and is per-design ra
 guessed threshold — and now that Code is editable with the picture in place, the fix is one field
 away.
 
+### 8l. The logo gets its own panel, and Photo QR becomes Artistic QR
+
+2026-09-12, from Garrett: "it appears we haven't yet implemented the logo in the middle". It had
+been built since M13, and working, but he did not find it, and the reason is worth keeping.
+
+- **Where the logo was.** The third group inside Style, below Colours and Shape, in a panel that
+  starts folded on every page except `/logo`. The folded summary only mentions a logo once one is
+  set, so an empty design gave no hint the feature existed.
+- **What pointed the wrong way.** The panel under Style was the only heading with a picture in it,
+  and its drop tile said "Blend a photo or a logo into the code itself". Someone holding a logo
+  read that as the logo feature and got a halftone, which is the less familiar result by far.
+- **What other generators do.** QRCode Monkey, the most-copied layout, runs Enter content, Set
+  colours, Add logo image, Customise design, with the logo as its own section, an upload, a
+  gallery of generic icons, and a "Remove background behind logo" switch (our clear space). The
+  published guidance (Hovercode, QR code design guides) is consistent with what the engine already
+  enforces: level H, a logo around a quarter of the width or less, clear space, square or round
+  logos over wide wordmarks, and a test scan.
+
+**What changed.**
+
+- `LogoPanel.svelte` holds the logo, moved whole out of `StylePanel.svelte`. It is first in the
+  design column and open from the start: empty, it is one drop tile. Order is now Content,
+  Preview, Logo, Style, Artistic QR, Size and download on a phone.
+- Dropping a logo while the blend is on switches the blend off, keeps the picture, and says so
+  under the tile. Before, the logo was accepted and silently not drawn. With a logo set and the
+  blend on, the controls are disabled (not hidden, so they come back as they were) and a notice
+  offers "Show the logo instead". The Size readout shows the width asked for while disabled rather
+  than "no room".
+- A new hint appears for a logo much wider than tall (`logoAspect` under 0.5): a square or round
+  version fills the middle better. `/logo` gained that tip and one about transparent logos.
+- **Photo QR is now Artistic QR** in every place a user reads it: the panel, notices, export
+  messages, the footer link, `/photo`'s title, h1, description and Open Graph card, the home page,
+  `schema.ts`, and `llms.txt`. "Artistic QR code" is the term the category goes by (Hovercode,
+  sqr.art, the halftone papers call them artistic or aesthetic QR codes), it says the result is
+  unusual rather than promising a photo sits somewhere, and it covers the built-in shapes, which
+  are not photos. The drop tile now reads "Your picture runs through the whole code", the panel
+  points to Logo for anyone who only wanted a logo in the middle, and `/photo` opens by saying it
+  is not the logo-in-the-middle code. The route stays `/photo` so existing links keep working.
+- Not renamed: code identifiers (`halftone`, `photoOpen`, `#photo-body`), this document's earlier
+  sections, the audit, and the scan sheets, which are records and a test artefact for Garrett
+  rather than copy for the people using the site.
+
+No export path changed, so no scan-matrix row is owed.
+
+**Built-in icons, the same day.** QRCode Monkey's gallery was the other half of the pattern, and
+for the people this site is for (a WiFi sign, a menu, an agenda) it is often the whole of it.
+Twelve generic icons live in `lib/logo-icons.ts`: website, WiFi, email, phone, text message,
+calendar, contact, location, document, menu, video, review. No brand marks, for trademark reasons.
+
+- **Not the Artistic QR shapes.** `glyphs.ts` draws silhouettes black on a white square, because the
+  halftone renderer reads them as a picture. A centre icon sits in the hole the logo cuts, on the
+  code's own background, so these are ink only, with no paper, and strokes heavy enough (8 to 11
+  in a 100 box) to survive at 20% of a small code.
+- **Drawn in the code colour, and following it.** An effect in `LogoPanel` redraws the icon whenever
+  `Design.fg` changes. It compares first, so a restored icon is not written back.
+- **A name, not a picture.** An icon is identified by `logoName` ("Menu (built-in icon)"; an upload's
+  name always carries an extension). A share link, which drops pictures, keeps an icon's name, and
+  the effect draws it again; `fromFile` rebuilds one from the name and ignores the file's markup,
+  as it already did for built-in shapes.
+- **Base64 or it is a raster.** The first build percent-encoded the data URL, and the preview showed
+  the icon as an `<image>`: the renderer inlines only `data:image/svg+xml;base64,` as markup, so
+  the SVG download would have held a picture of the icon. Caught by reading the preview's markup;
+  `logo-icons.test.ts` now pins the form.
+- **Checked.** `bun run logo-fixtures` places every icon exactly as the panel does, at 20% and at
+  the 32% maximum, requires `prepareSvgLogo` to find nothing to change, requires it to be inlined
+  rather than placed as a picture, and decodes the code: 24 of 24.
+- The icon row shows while there is no logo and while the logo is an icon, so switching is one
+  click; an uploaded logo hides it behind Remove.
+
 ## 9. Out of scope for this refresh
 
 - Dark mode. The paper look is the brand; a dark theme is a separate decision.

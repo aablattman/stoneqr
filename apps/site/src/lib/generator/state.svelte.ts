@@ -136,7 +136,7 @@ export class Design {
 	frameColor = $state('#000000');
 	frameTextColor = $state('#ffffff');
 
-	// Photo QR (halftone) mode, plan §7. Shown to users as "Photo QR"; the code keeps the technique's name. The picture is decoded and rendered on the device.
+	// Artistic QR (halftone) mode, plan §7. Shown to users as "Artistic QR" (it was "Photo QR" until 2026-09-12); the code keeps the technique's name. The picture is decoded and rendered on the device.
 	halftone = $state(false);
 	halftoneImage = $state<string | undefined>(undefined);
 	halftoneImageName = $state('');
@@ -166,7 +166,7 @@ export class Design {
 	/** The verified raster from the preview, reused by the export panel. */
 	halftoneRaster = $state<RasterImage | null>(null);
 	/**
-	 * Object URL of the rendered Photo QR preview. It lives on the design rather than inside the
+	 * Object URL of the rendered Artistic QR preview. It lives on the design rather than inside the
 	 * Preview component because the pinned phone bar shows the same thumbnail; Preview still owns
 	 * creating and revoking it.
 	 */

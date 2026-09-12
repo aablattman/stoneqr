@@ -150,7 +150,7 @@
 					<li><a href="/vcard">vCard QR code</a></li>
 					<li><a href="/event">Calendar event QR code</a></li>
 					<li><a href="/logo">QR code with logo</a></li>
-					<li><a href="/photo">Photo QR code</a></li>
+					<li><a href="/photo">Artistic QR code</a></li>
 					<li><a href="/print-size">Print size calculator</a></li>
 					<li><a href="/bulk">Bulk and label sheets</a></li>
 				</ul>

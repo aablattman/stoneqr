@@ -8,7 +8,7 @@
 <Seo
 	title={SITE.name}
 	schema={[APP_SCHEMA]}
-	description="Free QR code generator with no sign-up and no expiry. Codes are generated in your browser and never uploaded. Vector SVG, PDF, and EPS exports, print-size calculator, logos, Photo QR codes, and decode verification." />
+	description="Free QR code generator with no sign-up and no expiry. Codes are generated in your browser and never uploaded. Vector SVG, PDF, and EPS exports, print-size calculator, logos, artistic QR codes, and decode verification." />
 
 <Generator>
 	{#snippet hero()}
@@ -41,8 +41,8 @@
 		<p>
 			Links, <a href="/wifi">WiFi networks</a>, <a href="/vcard">contact cards</a>, email, SMS, phone
 			numbers, map pins, and <a href="/event">calendar events</a>, formatted the way phone cameras
-			expect. Add a <a href="/logo">logo</a>, choose colours with a contrast check, add a frame with a
-			call to action, or blend a photo into the code itself with Photo QR.
+			expect. Put your <a href="/logo">logo in the middle</a>, choose colours with a contrast check, add a frame
+			with a call to action, or weave a photo through the whole code with <a href="/photo">Artistic QR</a>.
 		</p>
 	</div>
 </section>

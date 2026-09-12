@@ -1,5 +1,5 @@
 /**
- * Built-in shapes for Photo QR's silhouette mode. Each is a small SVG, black on white, that goes
+ * Built-in shapes for Artistic QR's silhouette mode. Each is a small SVG, black on white, that goes
  * through the same path as an uploaded picture (a data URL decoded on a canvas), so it needs no
  * engine support and the vector export embeds it as a vector.
  */

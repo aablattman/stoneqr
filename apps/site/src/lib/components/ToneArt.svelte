@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * The picture inside a Photo QR tone tile: the same tiny scene drawn three ways, so the
+	 * The picture inside a Artistic QR tone tile: the same tiny scene drawn three ways, so the
 	 * difference between colour, black and white, and silhouette is visible rather than described.
 	 * The greys are the luminances of the colours beside them, so the middle tile is honestly what
 	 * the first one becomes.

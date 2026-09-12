@@ -222,7 +222,7 @@ Follow the ZXing "Barcode Contents" conventions.
 | `/bulk` | Bulk and label sheets | "bulk qr code generator", "qr code labels avery" |
 | `/print-size` | Standalone sizing calculator | "how big should a qr code be", "qr code size calculator" |
 | `/logo` | Generator with logo panel open | "qr code with logo free" |
-| `/photo` | Generator with the Photo QR panel open, built-in shapes one click away | "photo qr code", "qr code with picture", "artistic qr code generator" |
+| `/photo` | Generator with the Artistic QR panel open, built-in shapes one click away | "photo qr code", "qr code with picture", "artistic qr code generator" |
 | `/compare` | Factual table: expiry, SVG, logo, ECC control, sign-up required, ads | "qr code generator comparison", "qrcode monkey alternative" |
 | `/open-source` | Repo link, license, how to verify nothing leaves the browser | trust |
 | `/privacy` | Two paragraphs | trust |
@@ -232,7 +232,7 @@ All routes prerendered. Each SEO page carries a short, genuinely useful explaine
 ### UI notes
 
 - Desktop: three columns (content, live preview, style and export). Mobile: single column with a sticky preview. The page heading and subheading share a row with the Basic/Advanced toggle from `lg` up so the tool starts higher on the page; below `lg` the heading takes the full width and the toggle sits under it.
-- The halftone feature is named "Photo QR" in the interface; "halftone" is the technique and stays in code and research notes.
+- The halftone feature is named "Artistic QR" in the interface (it was "Photo QR" until 2026-09-12; see `docs/ui-refresh.md` §8l); "halftone" is the technique and stays in code and research notes.
 - Two control sets, Basic and Advanced, toggled above the generator and remembered in localStorage. Basic keeps content, colours, a look (five style presets that set the module and corner shapes together), logo, frame, Photo QR (upload, a draggable crop box with a zoom slider, the three tones), four named sizes, and the main downloads. The sizes are Small 25 mm (cards, stickers), Medium 50 mm (flyers, menus; the default), Large 100 mm (posters, door signs), Extra large 300 mm (banners, storefronts); each card states its reading distance from the 10:1 rule and flags itself "tight" or "too small" for the current content from the module-size floors. A width typed in Advanced appears in Basic as a selected "Custom" row. The look tiles are labelled "Preset" on the page. Colours are Code, Background, and Corners, the last following the code colour until one is chosen. The design is saved in the browser as you go (localStorage for settings and text, IndexedDB for the two pictures) with a "Start over" control, and "Copy a link to this design" puts the settings and content, but not the pictures, in the URL fragment for sharing. Basic's primary download is PNG, labelled with the pixel size it will produce; Advanced keeps SVG first. Advanced adds Photo QR's dot size, fade, contrast, and the Across and Down crop sliders, transparency, hand-set module and corner shapes under the look, gradients, scan distance, error correction and encoding, EPS, and the test sheet. A setting that is still in force but hidden by Basic is named in a one-line notice.
 - While a halftone picture is blended in, the Style panel is disabled and greyed out rather than silently ignored.
 - Preview re-encodes on every keystroke (sub-millisecond); verification runs debounced at 300 ms and shows a "Scannable" badge or a specific warning.

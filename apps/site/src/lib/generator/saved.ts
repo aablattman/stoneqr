@@ -22,6 +22,7 @@ import type { PayloadType } from '@stoneqr/engine/payloads';
 import { openDb, STORES, type Saved } from './persist';
 import type { Fields } from './state.svelte';
 import { GLYPHS, glyphDataUrl, glyphName } from '$lib/glyphs';
+import { logoIconByName, logoIconDataUrl } from '$lib/logo-icons';
 import { dataUrlProblem } from './pictures';
 
 export type SavedDesign = {
@@ -296,9 +297,9 @@ export type OpenedFile = DesignFile & { notes: string[] };
  * Read a design file. The record is applied through `apply`, which takes only what it
  * understands. The pictures are held to the upload tiles' rules (`pictures.ts`): a picture the
  * tile would refuse is left out and said so, rather than carried into the decode path and
- * IndexedDB. Photo QR takes real pixels only, so an SVG in that slot is refused as markup, with
+ * IndexedDB. Artistic QR takes real pixels only, so an SVG in that slot is refused as markup, with
  * one exception: a built-in shape is an SVG, and is rebuilt from `glyphs.ts` by its name in the
- * record, never taken from the file. The logo slot may be an SVG, and the caller rebuilds it
+ * record, never taken from the file. A built-in logo icon is rebuilt the same way from `logo-icons.ts`. The logo slot may be an SVG, and the caller rebuilds it
  * before it is used.
  */
 export function fromFile(text: string): OpenedFile | null {
@@ -316,7 +317,10 @@ export function fromFile(text: string): OpenedFile | null {
 			record,
 			notes: []
 		};
-		if (typeof p.logo === 'string') {
+		// A built-in icon is rebuilt from its name, like a built-in shape below, never taken from the file.
+		const icon = logoIconByName(record.logoName);
+		if (icon) out.logo = logoIconDataUrl(icon, typeof record.fg === 'string' ? record.fg : '#000000');
+		else if (typeof p.logo === 'string') {
 			const problem = dataUrlProblem('logo', p.logo);
 			if (problem) out.notes.push(`The logo in that file was left out. ${problem}`);
 			else out.logo = p.logo;
@@ -325,7 +329,7 @@ export function fromFile(text: string): OpenedFile | null {
 		if (shape) out.halftone = glyphDataUrl(shape);
 		else if (typeof p.halftone === 'string') {
 			const problem = dataUrlProblem('halftone', p.halftone);
-			if (problem) out.notes.push(`The Photo QR picture in that file was left out. ${problem}`);
+			if (problem) out.notes.push(`The Artistic QR picture in that file was left out. ${problem}`);
 			else out.halftone = p.halftone;
 		}
 		return out;

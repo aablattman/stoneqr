@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
-	import { contrastRatio, paperColor, LOGO_BLOCK_COVER, LOGO_WARN_COVER } from '@stoneqr/engine';
-	import { isSvgFile, pictureFileProblem } from './pictures';
-	import { LOGO_WIDTH_DEFAULT, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '$lib/logo-size';
+	import { contrastRatio, paperColor } from '@stoneqr/engine';
 	import { preloadStyled, FRAME, type CornerDotStyle, type CornerSquareStyle, type DotStyle } from '$lib/styled';
 	import { LOOKS, type LookId } from '$lib/looks';
 	import ColourField from '$lib/components/ColourField.svelte';
-	import DropTile from '$lib/components/DropTile.svelte';
 	import QrArt from '$lib/components/QrArt.svelte';
 	import SectionHeader from '$lib/components/SectionHeader.svelte';
 	import Slider from '$lib/components/Slider.svelte';
@@ -71,20 +68,6 @@
 		if (!advanced) return `${verdict === 'good' ? 'Good' : 'Low'} contrast`;
 		return `${contrast.toFixed(1)}:1 ${verdict}${design.transparentBg ? ' on white' : ''}`;
 	});
-	/**
-	 * What the logo actually came out as, never what the slider asked for. A hole is a whole odd
-	 * number of modules, so the reachable widths are a staircase and the readout steps with them.
-	 * Basic gets the width alone; Advanced also gets the share of the code the logo hides, which
-	 * is the number the error correction cares about and the one the warnings are set against.
-	 */
-	const logoReadout = $derived.by(() => {
-		const fit = design.logoFit;
-		// Until there is content there is no code, so no staircase to land on: show what was asked.
-		if (!design.encoded) return `${Math.round(design.logoWidth * 100)}% of width`;
-		if (!fit.logoW) return 'no room';
-		const width = `${Math.round(fit.width * 100)}% of width`;
-		return advanced ? `${width} · hides ${Math.round(fit.cover * 100)}%` : width;
-	});
 	/** The whole panel is inert while a halftone picture owns the render. */
 	const off = $derived(design.halftoneActive);
 
@@ -114,53 +97,10 @@
 		if (design.gradient !== 'none') parts.push('Gradient');
 		if (design.fg !== '#000000' || design.cornerColor !== null || (design.bg !== '#ffffff' && !design.transparentBg)) parts.push('Colour');
 		if (design.transparentBg) parts.push('Transparent');
-		// Painting over the modules is the unusual choice, so a folded panel says so.
-		if (design.logo) parts.push(design.logoKnockout ? 'Logo' : 'Logo over modules');
 		if (design.frameEnabled) parts.push('Frame');
 		return parts.join(' · ');
 	});
 
-	let logoError = $state('');
-	/** Things worth telling someone about the file they just dropped, shown under the tile. */
-	let logoNotes = $state<string[]>([]);
-
-	async function onLogo(file: File) {
-		logoError = '';
-		logoNotes = [];
-		// The same rules a design file is held to; see `pictures.ts`.
-		const problem = pictureFileProblem('logo', file);
-		if (problem) {
-			logoError = problem;
-			return;
-		}
-		try {
-			if (isSvgFile(file)) {
-				// An uploaded SVG is a document, not a picture: it is rebuilt before anything sees
-				// it. Loaded on demand so the work stays out of the generator's first chunk.
-				const { prepareSvgLogo } = await import('$lib/logo-svg');
-				const prepared = prepareSvgLogo(await file.text());
-				design.logo = prepared.dataUrl;
-				logoNotes = prepared.notes;
-			} else {
-				design.logo = await new Promise<string>((res, rej) => {
-					const r = new FileReader();
-					r.onload = () => res(String(r.result));
-					r.onerror = () => rej(new Error('Could not read the file'));
-					r.readAsDataURL(file);
-				});
-			}
-			design.logoName = file.name;
-		} catch (e) {
-			logoError = e instanceof Error ? e.message : String(e);
-		}
-	}
-	function clearLogo() {
-		logoNotes = [];
-		design.logo = undefined;
-		design.logoName = '';
-		design.logoAspect = 1;
-		logoError = '';
-	}
 </script>
 
 <SectionHeader
@@ -177,14 +117,14 @@
 		{#if off}
 			<p class="notice notice-info">
 				Code and Background still apply: they colour the picture's dots and its paper. The shapes, corner colour, fill,
-				logo, and frame are the ones the photo replaces; they come back when you remove the photo or untick "Blend the
+				and frame are the ones Artistic QR replaces; they come back when you remove the picture or untick "Blend the
 				picture into the code".
 			</p>
 		{/if}
 
 		<!-- Code and Background are the only two settings that mean the same thing whichever renderer
 		     is in charge, so they sit outside the fieldset a photo disables. They used to be inside
-		     it, which left them governing the Photo QR output while greyed out and unreachable: a
+		     it, which left them governing the Artistic QR output while greyed out and unreachable: a
 		     code coloured as one end of a gradient could not be taken back without removing the
 		     picture first. Everything below the fieldset really is dropped by the halftone renderer. -->
 		<div class="grid gap-3">
@@ -278,66 +218,6 @@
 					<Swatches label="Corner dots" options={cornerDots} bind:value={design.cornerDot} columns={4} ariaLabel="Corner dot shape">
 						{#snippet draw(id)}<QrArt kind="dot" style={id} />{/snippet}
 					</Swatches>
-				{/if}
-			</div>
-
-			<!-- Logo -->
-			<div class="grid gap-3">
-				<p class="subhead">Logo</p>
-				<DropTile
-					src={design.logo ?? ''}
-					name={design.logoName}
-					accept="image/png,image/jpeg,image/webp,image/svg+xml,.svg"
-					label="Drop a logo here, or choose a file"
-					hint="PNG, JPEG, WebP, or SVG. It stays in your browser."
-					error={logoError}
-					ariaLabel="Upload a logo"
-					disabled={off}
-					onfile={onLogo}
-					onclear={clearLogo}
-				/>
-				{#each logoNotes as note (note)}
-					<p class="notice notice-info">{note}</p>
-				{/each}
-				{#if design.logo}
-					<Slider
-						label="Size"
-						bind:value={design.logoWidth}
-						min={LOGO_WIDTH_MIN}
-						max={LOGO_WIDTH_MAX}
-						step={0.01}
-						reset={LOGO_WIDTH_DEFAULT}
-						format={() => logoReadout}
-						readoutClass={design.logoCover > LOGO_BLOCK_COVER
-							? 'text-block'
-							: design.logoCover > LOGO_WARN_COVER
-								? 'text-warn'
-								: ''}
-					/>
-					{#if design.logoKnockout}
-						<Slider
-							label="Margin"
-							bind:value={design.logoMargin}
-							min={0}
-							max={3}
-							step={1}
-							reset={1}
-							format={(v) => `${v} mod`}
-						/>
-					{/if}
-					<label class="toggle">
-						<input type="checkbox" role="switch" bind:checked={design.logoKnockout} />
-						Clear space behind the logo
-					</label>
-					<p class="hint">
-						{#if design.logoKnockout}
-							The modules under the logo are removed and error correction rebuilds them. It is set to H while
-							a logo is present.
-						{:else}
-							The logo is painted straight over the modules, so nothing is cleared for it. Watch the decode
-							badge.
-						{/if}
-					</p>
 				{/if}
 			</div>
 

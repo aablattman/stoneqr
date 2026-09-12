@@ -7,7 +7,7 @@
 	 *
 	 * Collapsible: the heading holds a disclosure button that folds the panel. When folded it
 	 * shows a one-line summary of what is set inside, so nothing is hidden by folding — a closed
-	 * Style panel still says "Rounded · Logo · Frame".
+	 * Style panel still says "Rounded · Gradient · Frame".
 	 *
 	 * Why a button inside a heading rather than <details>/<summary>: the panels used to be
 	 * <details>, and Svelte merges every dynamic attribute in a block into one effect, so

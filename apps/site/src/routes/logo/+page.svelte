@@ -5,7 +5,7 @@
 
 <Seo title="QR code with logo" description="Add a logo to a QR code for free, with the error correction raised automatically, a size cap, and a decode check so the printed code still scans." />
 
-<Generator preset="url" styleOpen={true}>
+<Generator preset="url">
 	{#snippet hero()}
 	<h1 class="reveal">A logo in the middle, and it still scans.</h1>
 	<p class="reveal reveal-2 mt-2 max-w-2xl text-lg text-ink-2">Error correction goes to H automatically, the size is capped at what the code can afford to lose, and the download unlocks only after the code decodes.</p>
@@ -17,9 +17,12 @@
 		<h2>Why logos work at all</h2>
 		<p>QR codes carry error correction: at level H, about 30 percent of the code can be covered or damaged and it still reads. A centred logo spends part of that budget, and everything else that goes wrong in the real world spends the rest. This page raises the level to H when you add a picture, clears the modules under it, keeps the corner finder patterns untouched, and stops you once the logo would hide more than a fifth of the code.</p>
 		<p>The size control asks for a width, as a share of the code's width, and the readout tells you what you actually got. Those two can differ by a point or two, because a logo can only occupy a whole odd number of modules: on a small code the reachable sizes are a short staircase, and the readout steps up it rather than pretending the slider is smooth. In Advanced the readout also says how much of the code the logo hides, which is the number the warnings are set against.</p>
+		<p>No logo file to hand? Pick one of the built-in icons instead: website, WiFi, email, phone, text message, calendar, contact, location, document, menu, video, or review. They are drawn in the code colour, follow it when it changes, and stay vector in the SVG download. Because an icon is a name rather than a picture, it also travels in a share link, which an uploaded logo does not.</p>
 		<p>PNG, JPEG, WebP, and SVG all work. An SVG stays vector the whole way through, so the SVG download holds your logo as real curves for a print shop to scale, rather than a picture of it. Uploaded SVGs are rebuilt in your browser first: script, animation, and anything pointing at a file on the internet are stripped out, styles are baked onto the shapes they belong to, and the drawing is held inside its own box. You are told what was changed.</p>
 		<h3>Get the most from a logo</h3>
 		<ul>
+			<li>Use a square or round version of your logo if you have one, such as the icon or monogram. A wide wordmark is fitted to the width of the space, so it comes out short and hard to read at arm's length.</li>
+			<li>Give a logo with a transparent background a solid version if it disappears against the code colour: the clear space is the background colour, so a dark logo on a dark background vanishes.</li>
 			<li>Watch the readout rather than the slider. Amber means error correction is doing most of the work; red means the download is locked until you shrink it.</li>
 			<li>Leave the clear space behind the logo on. It gives the scanner a clean edge to work with. Turning it off paints the logo straight over the modules, which looks busier and asks more of the scan.</li>
 			<li>A longer link makes a denser code, which has more modules to spare, so the same logo hides proportionally less. Shortening the content is the other way to make room.</li>

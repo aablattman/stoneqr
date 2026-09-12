@@ -7,7 +7,8 @@
  * shape is still a broken feature.
  */
 import { prepareSvgLogo, decodeSvgDataUrl, SvgLogoError } from '../../apps/site/src/lib/logo-svg';
-import { fitLogo } from '../../apps/site/src/lib/logo-size';
+import { fitLogo, LOGO_WIDTH_MAX } from '../../apps/site/src/lib/logo-size';
+import { LOGO_ICONS, logoIconDataUrl, logoIconSvg } from '../../apps/site/src/lib/logo-icons';
 import { renderStyled } from '../../apps/site/src/lib/styled';
 import { svgToCanvas, canvasImageData } from '../../apps/site/src/lib/svg-raster';
 import { encode, verifyImageData } from '../../apps/site/node_modules/@stoneqr/engine';
@@ -41,8 +42,11 @@ const FORBIDDEN: Array<[RegExp, string]> = [
 	[/<style[\s>]/i, 'a style element']
 ];
 
-async function check(name: string): Promise<void> {
-	const source = await fetch(`/fixtures/${encodeURIComponent(name)}`).then((r) => r.text());
+/**
+ * Prepare one logo, check what came out, place it in a real code at `width`, and decode it.
+ * `clean` is for our own drawings: the preparation must find nothing to change in them.
+ */
+async function check(name: string, source: string, width = 0.2, clean = false, placed?: string): Promise<void> {
 
 	let prepared;
 	try {
@@ -69,7 +73,7 @@ async function check(name: string): Promise<void> {
 	// Place it in a real code and decode the result.
 	const qr = encode(PAYLOAD, { ecc: 'H', minVersion: 1, mask: 'auto' });
 	const aspect = prepared.height / prepared.width;
-	const fit = fitLogo(0.2, { modules: qr.size, version: qr.version, ecc: 'H', margin: 1, aspect });
+	const fit = fitLogo(width, { modules: qr.size, version: qr.version, ecc: 'H', margin: 1, aspect });
 	const rendered = await renderStyled(
 		{
 			payload: PAYLOAD,
@@ -84,7 +88,8 @@ async function check(name: string): Promise<void> {
 			gradient: 'none',
 			gradientTo: '#000000',
 			gradientAngleDeg: 45,
-			logo: prepared.dataUrl,
+			// An icon goes into the code as the Logo panel puts it there, unprepared.
+			logo: placed ?? prepared.dataUrl,
 			logoCoefficient: fit.coefficient,
 			logoKnockout: true,
 			logoMargin: 1,
@@ -105,10 +110,10 @@ async function check(name: string): Promise<void> {
 	const shape = aspect > 1.05 ? 'tall' : aspect < 0.95 ? 'wide' : 'square';
 	line(
 		true,
-		`${name}: ${prepared.width} × ${prepared.height} ${shape}, hole ${fit.hideX}×${fit.hideY}, decodes` +
+		`${name}: ${prepared.width} × ${prepared.height} ${shape}, hole ${fit.hideX}×${fit.hideY} at ${Math.round(width * 100)}%, decodes` +
 			(prepared.notes.length ? `, ${prepared.notes.length} note${prepared.notes.length === 1 ? '' : 's'}` : '')
 	);
-	for (const note of prepared.notes) line(true, `      note: ${note}`);
+	for (const note of prepared.notes) line(!clean, `      note: ${note}`);
 
 	const fig = document.createElement('figure');
 	const img = new Image();
@@ -145,9 +150,23 @@ async function main(): Promise<void> {
 	for (const name of names) {
 		status.textContent = `Checking ${name}…`;
 		try {
-			await check(name);
+			const source = await fetch(`/fixtures/${encodeURIComponent(name)}`).then((r) => r.text());
+			await check(name, source);
 		} catch (e) {
 			line(false, `${name}: threw — ${e instanceof Error ? e.message : String(e)}`);
+		}
+	}
+	// The built-in logo icons, at the default width and the widest the slider allows, in a
+	// coloured ink. They are our drawings, so preparation must leave them exactly as they are.
+	for (const icon of LOGO_ICONS) {
+		for (const width of [0.2, LOGO_WIDTH_MAX]) {
+			const name = `icon ${icon.id}`;
+			status.textContent = `Checking ${name}…`;
+			try {
+				await check(name, logoIconSvg(icon, '#1a3d8f'), width, true, logoIconDataUrl(icon, '#1a3d8f'));
+			} catch (e) {
+				line(false, `${name}: threw — ${e instanceof Error ? e.message : String(e)}`);
+			}
 		}
 	}
 	await checkRefusals();

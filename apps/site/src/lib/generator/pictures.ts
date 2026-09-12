@@ -26,7 +26,7 @@ export const PICTURE_RULES: Record<PictureSlot, PictureRule> = {
 	halftone: {
 		maxBytes: 8 * 1024 * 1024,
 		types: ['image/png', 'image/jpeg', 'image/webp'],
-		wrongType: 'Use a PNG, JPEG, or WebP. Photo QR resamples real pixels; an SVG goes on the logo instead.',
+		wrongType: 'Use a PNG, JPEG, or WebP. Artistic QR works from real pixels; an SVG goes in the Logo panel instead.',
 		tooBig: 'Keep the picture under 8 MB. It is scaled down before it is used anyway.'
 	}
 };

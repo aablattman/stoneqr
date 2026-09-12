@@ -543,7 +543,7 @@ a:hover {
 }
 
 /*
- * The Photo QR crop box. The stage is a square of paper with the picture inside it; the box is
+ * The Artistic QR crop box. The stage is a square of paper with the picture inside it; the box is
  * the data area, drawn over the picture with everything outside it dimmed by one large shadow,
  * which the stage's overflow clips. The corner handle zooms.
  */

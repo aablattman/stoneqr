@@ -1,6 +1,6 @@
 # StoneQR
 
-> Free, open-source (MIT) QR code generator that runs entirely in the browser. Codes are computed on the user's device, never uploaded, and cannot expire or be deactivated. Built for print: vector SVG, PDF (CMYK), and EPS exports with real millimetre dimensions, a print-size and scan-distance calculator, logos with a coverage cap, Photo QR (a picture blended into the modules), bulk generation with Avery label sheets, and a decode check before every download.
+> Free, open-source (MIT) QR code generator that runs entirely in the browser. Codes are computed on the user's device, never uploaded, and cannot expire or be deactivated. Built for print: vector SVG, PDF (CMYK), and EPS exports with real millimetre dimensions, a print-size and scan-distance calculator, logos in the middle with a coverage cap, artistic QR codes (a photo blended through the whole code), bulk generation with Avery label sheets, and a decode check before every download.
 
 Site: https://stoneqr.app · Source: https://github.com/malignantz/stoneqr · Privacy: nothing typed leaves the browser.
 
@@ -12,7 +12,7 @@ Site: https://stoneqr.app · Source: https://github.com/malignantz/stoneqr · Pr
 - [vCard QR code](https://stoneqr.app/vcard): a contact card people can save in one tap.
 - [Event QR code](https://stoneqr.app/event): a calendar event in a code, with notes on which phones offer to add it.
 - [QR code with logo](https://stoneqr.app/logo): error correction raised automatically, coverage capped, download decode-checked.
-- [Photo QR code](https://stoneqr.app/photo): a photo, logo, or built-in shape drawn in the modules themselves.
+- [Artistic QR code](https://stoneqr.app/photo): a photo or built-in shape drawn through the modules of the whole code.
 - [Print size calculator](https://stoneqr.app/print-size): module size, minimum width, and scan distance from the 10:1 rule.
 - [Bulk and label sheets](https://stoneqr.app/bulk): paste a list or open a CSV; ZIP download or Avery label PDF.
 - [Compare generators](https://stoneqr.app/compare): expiry, sign-up, vector export, error correction, and where data goes, side by side.
