@@ -43,9 +43,13 @@
 	import ExportPanel from './ExportPanel.svelte';
 	import SavedDesigns from './SavedDesigns.svelte';
 
+	// Style opens by default: styling is what people come to StoneQR for, and a folded panel hides
+	// the presets and colours behind a click. Logo stays above it because its empty state is one
+	// drop tile and twelve icons, while Style open is as tall again and would bury the logo the way
+	// §8l found it buried. Form-first landing pages (/wifi, /vcard, /event) and /photo fold it.
 	let {
 		preset = 'url',
-		styleOpen = false,
+		styleOpen = true,
 		photoOpen = false,
 		hero
 	}: { preset?: PayloadType; styleOpen?: boolean; photoOpen?: boolean; hero?: Snippet } = $props();

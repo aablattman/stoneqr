@@ -1056,3 +1056,19 @@ changed, which none should.
 
 Phases 0 and 1 are one pull request. Each later phase is its own, so a regression is easy to
 find. Nothing in a later phase depends on a design decision that Phase 1 does not already make.
+
+### 8o. Style opens by default
+
+2026-09-13, from Garrett: Style "will be often used, since that's the whole point" of the site,
+and should perhaps come first and open. Until now only Logo opened; Style and Artistic QR started
+folded on every page.
+
+- **Style now opens by default** on `/` and `/logo`. Its Basic body (presets, Code, Background,
+  Corners, frame) measured about 475 px on the live site, the same as Logo's empty body.
+- **Logo stays first.** Moving Style above it puts that full height between the heading and the
+  logo tile, which is the burial §8l fixed. Logo's empty state is cheap to scroll past; Style's is
+  not.
+- **Artistic QR stays folded.** It replaces most of Style when on, so it is a mode someone chooses
+  rather than a set of options they tune; `/photo` and a restored picture still open it.
+- **Still folded on `/wifi`, `/vcard`, `/event`** (the form is the work there) **and `/photo`**
+  (Style open would push the panel the visitor came for down by a screen).

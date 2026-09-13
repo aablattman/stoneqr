@@ -5,7 +5,7 @@
 
 <Seo title="Artistic QR code" description="Weave a photo or a built-in shape through a whole QR code for free. The picture is drawn in the modules themselves, generated in your browser, and decode-checked before download." />
 
-<Generator preset="url" photoOpen={true}>
+<Generator preset="url" styleOpen={false} photoOpen={true}>
 	{#snippet hero()}
 	<h1 class="reveal">A photo woven through the code, and it still scans.</h1>
 	<p class="reveal reveal-2 mt-2 max-w-2xl text-lg text-ink-2">Blend a photo or one of the built-in shapes through every square of the code, for a code nobody else has. <span class="hidden sm:inline">Error correction goes to H, and the download unlocks only after the code decodes on your device.</span></p>
