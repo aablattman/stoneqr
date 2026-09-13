@@ -3,11 +3,14 @@
  *
  *   bun run fonts
  *
- * The site's three families ship from @fontsource-variable as full variable fonts (about 140 KB
+ * The site's two families (Archivo, cut into three first-paint faces, and JetBrains Mono) ship from @fontsource-variable as full variable fonts (about 140 KB
  * for the Latin files), and the browser cannot start fetching them until the stylesheet has
  * arrived and been parsed. This script cuts each family down to what the first paint needs:
  * the basic Latin repertoire (ASCII, Latin-1, the common typographic punctuation) and only the
- * axis ranges the stylesheet uses. The fontsource faces stay imported in app.css as the fallback
+ * axis ranges the stylesheet uses. Each subset has a family name of its own ('Archivo Text' and so on)
+ * and app.css lists the fontsource family after it, so the two never tie in font matching: a face
+ * sharing the fontsource family name lost to it whenever both descriptor ranges covered a request.
+ * The fontsource faces stay imported in app.css as the fallback
  * for any other character, so a Polish surname in a vCard still renders in the right family; the
  * browser downloads that fuller file only when such a character appears.
  *
@@ -44,6 +47,12 @@ const RANGES = [
 	[0x2212, 0x2212] // minus
 ];
 const text = RANGES.flatMap(([a, b]) => Array.from({ length: b - a + 1 }, (_, i) => String.fromCodePoint(a + i))).join('');
+/** A unicode-range for exactly the characters of a string, for a face cut to a short repertoire. */
+const rangeOf = (chars) =>
+	[...new Set([...chars].map((c) => c.codePointAt(0)))]
+		.sort((a, b) => a - b)
+		.map((c) => `U+${c.toString(16)}`)
+		.join(', ');
 const unicodeRange = RANGES.map(([a, b]) => (a === b ? `U+${a.toString(16)}` : `U+${a.toString(16)}-${b.toString(16)}`)).join(', ');
 
 /**
@@ -52,27 +61,40 @@ const unicodeRange = RANGES.map(([a, b]) => (a === b ? `U+${a.toString(16)}` : `
  */
 const FAMILIES = [
 	{
-		name: 'fraunces',
-		family: 'Fraunces Variable',
-		file: 'fraunces/files/fraunces-latin-opsz-normal.woff2',
-		// h1 to h3 and .display are the only display text, at weight 500 and opsz 18, 36, or 72;
-		// pinning the weight halves the file. The fontsource file carries only
-		// the wght and opsz axes, so the SOFT and WONK settings in app.css have never had an effect.
-		axes: { wght: 500, opsz: { min: 18, max: 72 } },
-		weight: '500'
-	},
-	{
-		name: 'instrument-sans',
-		family: 'Instrument Sans Variable',
-		file: 'instrument-sans/files/instrument-sans-latin-wght-normal.woff2',
-		axes: {},
+		name: 'archivo-text',
+		family: 'Archivo Text',
+		file: 'archivo/files/archivo-latin-wdth-normal.woff2',
+		// Body copy, inputs, and buttons: normal width, 400 to 700.
+		axes: { wght: { min: 400, max: 700 }, wdth: 100 },
 		weight: '400 700'
 	},
 	{
+		name: 'archivo-display',
+		family: 'Archivo Display',
+		file: 'archivo/files/archivo-latin-wdth-normal.woff2',
+		// Headings, labels, badges, and the wordmark: the expanded end of the width axis, 600 to 800.
+		axes: { wght: { min: 600, max: 800 }, wdth: 125 },
+		weight: '600 800',
+		stretch: '125%'
+	},
+	{
+		name: 'archivo-caption',
+		family: 'Archivo Caption',
+		file: 'archivo/files/archivo-latin-wdth-normal.woff2',
+		// The captions under drawn tiles, set in capitals at 87.5% width so a word fits a 46 px tile.
+		// Capitals, digits, and a little punctuation are all they ever show.
+		axes: { wght: 600, wdth: 87.5 },
+		weight: '600',
+		stretch: '87.5%',
+		// Preloaded like the others: left to be discovered, it held first paint back by 100 to 350 ms
+		// in Lighthouse's throttled run, because the type tiles are in the first screen.
+		text: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -./&()%\'\u2019'
+	},
+	{
 		name: 'jetbrains-mono',
-		family: 'JetBrains Mono Variable',
+		family: 'JetBrains Mono Subset',
 		file: 'jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2',
-		// Labels, tickets, and numeric inputs at 400 and 500 only.
+		// Figures only (.num, numeric inputs, hex fields) at 400 and 500.
 		axes: { wght: { min: 400, max: 500 } },
 		weight: '400 500'
 	}
@@ -85,13 +107,13 @@ const faces = [];
 const hrefs = [];
 for (const f of FAMILIES) {
 	const input = readFileSync(resolve(src, f.file));
-	const out = await subsetFont(input, text, { targetFormat: 'woff2', variationAxes: f.axes });
+	const out = await subsetFont(input, f.text ?? text, { targetFormat: 'woff2', variationAxes: f.axes });
 	const hash = createHash('sha256').update(out).digest('hex').slice(0, 8);
 	const name = `${f.name}.${hash}.woff2`;
 	writeFileSync(resolve(outDir, name), out);
 	hrefs.push(`/fonts/${name}`);
 	faces.push(
-		`@font-face {\n\tfont-family: '${f.family}';\n\tfont-style: normal;\n\tfont-weight: ${f.weight};\n\tfont-display: swap;\n\tsrc: url('/fonts/${name}') format('woff2-variations');\n\tunicode-range: ${unicodeRange};\n}`
+		`@font-face {\n\tfont-family: '${f.family}';\n\tfont-style: normal;\n\tfont-weight: ${f.weight};\n${f.stretch ? `\tfont-stretch: ${f.stretch};\n` : ''}\tfont-display: swap;\n\tsrc: url('/fonts/${name}') format('woff2-variations');\n\tunicode-range: ${f.text ? rangeOf(f.text) : unicodeRange};\n}`
 	);
 	console.log(`${name}\t${input.length} -> ${out.length} B`);
 }

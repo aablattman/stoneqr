@@ -20,9 +20,9 @@ import { encodePng } from '../packages/engine/src/export/png.ts';
 const outDir = resolve(dirname(fileURLToPath(import.meta.url)), '../apps/site/static');
 
 // The drawing, in the SVG's 24-unit space. Same values as favicon.svg.
-const INK = [0x1b, 0x19, 0x17];
-const PAPER = [0xf4, 0xf0, 0xe8];
-const ACCENT = [0x1f, 0x6f, 0x63];
+const INK = [0x13, 0x16, 0x18]; // basalt
+const PAPER = [0xe6, 0xe2, 0xd8]; // limestone
+const ACCENT = [0x5c, 0xca, 0xa5]; // copper verdigris
 const RADIUS = 3;
 
 /** Colour at a point of the 24-unit drawing, or null outside the rounded square. */

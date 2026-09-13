@@ -485,7 +485,7 @@
 					</button>
 				{:else}
 					<div
-						class="h-2 w-full overflow-hidden rounded-full border border-rule-2 bg-white"
+						class="h-2 w-full overflow-hidden rounded-full border border-rule-2 bg-field"
 						role="progressbar"
 						aria-valuemin={0}
 						aria-valuemax={100}

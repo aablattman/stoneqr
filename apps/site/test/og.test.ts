@@ -110,6 +110,11 @@ describe('Open Graph cards', () => {
 		}
 	});
 
+	it('carries a code on the home card that decodes to the site', () => {
+		const image = cropCode(decodePng(readPng('og.png')));
+		expect(verifyRaster(image, SITE.url)).toEqual({ ok: true, decoded: SITE.url });
+	});
+
 	it('carries a code that decodes to its own page', () => {
 		for (const route of OG_ROUTES) {
 			const image = cropCode(decodePng(readPng(`og/${route.slug}.png`)));

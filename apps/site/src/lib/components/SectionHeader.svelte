@@ -85,7 +85,7 @@
 {/snippet}
 
 {#if level === 2}
-	<h2 {id} class="flex min-w-0 text-xl">{@render inner()}</h2>
+	<h2 {id} class="flex min-w-0 text-lg">{@render inner()}</h2>
 {:else}
-	<h3 {id} class="flex min-w-0 text-lg">{@render inner()}</h3>
+	<h3 {id} class="flex min-w-0 text-base">{@render inner()}</h3>
 {/if}

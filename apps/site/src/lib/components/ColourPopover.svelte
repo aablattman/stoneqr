@@ -259,7 +259,7 @@
 					onclick={() => pickSwatch(s)}
 				>
 					{#if current === s}
-						<Icon name="tick" size={11} width={2} class={isLight(s) ? 'text-ink' : 'text-white'} />
+						<Icon name="tick" size={11} width={2} class={isLight(s) ? 'text-stone-ink' : 'text-white'} />
 					{/if}
 				</button>
 			{/each}

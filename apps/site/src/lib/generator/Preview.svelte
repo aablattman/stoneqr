@@ -284,14 +284,16 @@
 	  the decode badge live in a caption strip along the bottom, like the ticket on a print proof,
 	  so nothing sits above the code to push it out of line.
 	-->
-	<div id="preview-card" class="sheet mx-auto w-full max-w-[min(100%,72vw)] overflow-hidden lg:max-w-none">
+	<!-- The limestone tablet (app.css .plaque): the one light object on the stone page, so the eye
+	     lands on the code. `.tablet` puts the light palette back in scope for everything on it. -->
+	<div id="preview-card" class="plaque tablet set-down mx-auto w-full max-w-[min(100%,72vw)] overflow-hidden p-2.5 sm:p-3 lg:max-w-none">
 		<!-- The stage stays white whatever the background colour: the code carries its own
 		     background inside its quiet zone, and a stage painted the same colour made it spill
 		     past the code and, with a frame, outside the frame's rounded shape. Transparent shows
 		     a checkerboard so the missing background is visible. -->
 		<div
-			class="relative grid aspect-square w-full grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden p-4"
-			style="background: {design.transparentBg ? 'repeating-conic-gradient(#e6e1d6 0 25%, #f4f0e8 0 50%) 0 0 / 16px 16px' : 'white'}"
+			class="plaque-stage relative grid aspect-square w-full grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)] place-items-center overflow-hidden p-4"
+			style="background: {design.transparentBg ? 'repeating-conic-gradient(#e2ded4 0 25%, #f6f4ee 0 50%) 0 0 / 16px 16px' : 'white'}"
 			role="img"
 			aria-label="QR code preview encoding a {describe(design.type)}"
 		>
@@ -318,12 +320,21 @@
 					{@html svg}
 				</div>
 			{:else if design.isEmpty}
+				<!-- The empty tablet: the three finder patterns set out like marks for where the code will
+				     be cut, with dashed guides between them. -->
 				<div class="grid place-items-center text-center text-ink-3">
-					<svg width="120" height="120" viewBox="0 0 21 21" aria-hidden="true" class="opacity-25">
-						<rect x="0" y="0" width="7" height="7" fill="currentColor" /><rect x="14" y="0" width="7" height="7" fill="currentColor" /><rect x="0" y="14" width="7" height="7" fill="currentColor" />
-						<rect x="2" y="2" width="3" height="3" fill="var(--color-paper)" /><rect x="16" y="2" width="3" height="3" fill="var(--color-paper)" /><rect x="2" y="16" width="3" height="3" fill="var(--color-paper)" />
+					<svg width="132" height="132" viewBox="-1 -1 23 23" aria-hidden="true" class="empty-marks">
+						<g fill="none" stroke="currentColor" stroke-width="0.35" stroke-dasharray="0.6 0.6" opacity="0.55">
+							<path d="M7.5 3.5h6M3.5 7.5v6M9 9h12v12H9z" />
+						</g>
+						<g fill="none" stroke="currentColor" stroke-width="1">
+							<rect x="0.5" y="0.5" width="6" height="6" /><rect x="14.5" y="0.5" width="6" height="6" /><rect x="0.5" y="14.5" width="6" height="6" />
+						</g>
+						<g fill="currentColor">
+							<rect x="2" y="2" width="3" height="3" /><rect x="16" y="2" width="3" height="3" /><rect x="2" y="16" width="3" height="3" />
+						</g>
 					</svg>
-					<p class="mt-3 max-w-[16rem] text-sm">Type something in the content panel and the code appears here.</p>
+					<p class="mt-4 max-w-[16rem] text-sm">Type something in the content panel and the code appears here.</p>
 				</div>
 			{:else if design.encodeError}
 				<p class="notice notice-block max-w-[18rem]">{design.encodeError}</p>
@@ -339,7 +350,7 @@
 				</span>
 			{/if}
 		</div>
-		<div class="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t border-rule px-4 py-2 whitespace-nowrap">
+		<div class="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-1.5 pt-2.5 pb-0.5 whitespace-nowrap">
 			<!--
 			  Between lg and xl the preview column is about 276 px, which is not enough for the
 			  label, the Actual size toggle, and the decode badge at once. The label is the least

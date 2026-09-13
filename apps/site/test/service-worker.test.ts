@@ -8,15 +8,15 @@ const scope = {
 		'/_app/immutable/chunks/DsgNC7nG.js',
 		'/_app/immutable/workers/halftone.worker-DDEe-NBa.js',
 		'/_app/immutable/assets/0.CJcjJNj7.css',
-		'/_app/immutable/assets/fraunces-latin-opsz-normal.DihXLNYH.woff2'
+		'/_app/immutable/assets/archivo-latin-wdth-normal.DihXLNYH.woff2'
 	],
 	files: [
 		'/_headers',
 		'/apple-touch-icon.png',
 		'/favicon.ico',
 		'/favicon.svg',
-		'/fonts/fraunces.7716ddd0.woff2',
-		'/fonts/instrument-sans.13f38f0b.woff2',
+		'/fonts/archivo-text.08597be6.woff2',
+		'/fonts/jetbrains-mono.b5d6e25a.woff2',
 		'/icon-192.png',
 		'/icon-512.png',
 		'/icon-maskable-512.png',
@@ -35,7 +35,7 @@ const scope = {
 describe('precacheable', () => {
 	it('keeps the fonts, icons, and manifest', () => {
 		for (const path of [
-			'/fonts/fraunces.7716ddd0.woff2',
+			'/fonts/archivo-text.08597be6.woff2',
 			'/manifest.webmanifest',
 			'/icon-192.png',
 			'/icon-maskable-512.png',
@@ -78,8 +78,8 @@ describe('precacheList', () => {
 			'/apple-touch-icon.png',
 			'/favicon.ico',
 			'/favicon.svg',
-			'/fonts/fraunces.7716ddd0.woff2',
-			'/fonts/instrument-sans.13f38f0b.woff2',
+			'/fonts/archivo-text.08597be6.woff2',
+			'/fonts/jetbrains-mono.b5d6e25a.woff2',
 			'/icon-192.png',
 			'/icon-512.png',
 			'/icon-maskable-512.png',
@@ -129,7 +129,7 @@ describe('workerRefs', () => {
 describe('isImmutable', () => {
 	it('is the hashed bundle and the subset fonts only', () => {
 		expect(isImmutable('/_app/immutable/chunks/DsgNC7nG.js')).toBe(true);
-		expect(isImmutable('/fonts/fraunces.7716ddd0.woff2')).toBe(true);
+		expect(isImmutable('/fonts/archivo-text.08597be6.woff2')).toBe(true);
 		expect(isImmutable('/_app/version.json')).toBe(false);
 		expect(isImmutable('/manifest.webmanifest')).toBe(false);
 		expect(isImmutable('/wifi')).toBe(false);
@@ -157,7 +157,7 @@ describe('strategyFor', () => {
 	it('serves hashed files cache-first even when the worker was not told about them', () => {
 		expect(strategyFor('/_app/immutable/chunks/DsgNC7nG.js', opts(false))).toBe('immutable');
 		expect(strategyFor('/_app/immutable/chunks/unknown.js', opts(false))).toBe('immutable');
-		expect(strategyFor('/fonts/fraunces.7716ddd0.woff2', opts(false))).toBe('immutable');
+		expect(strategyFor('/fonts/archivo-text.08597be6.woff2', opts(false))).toBe('immutable');
 	});
 
 	it('serves precached statics cache-first and leaves everything else to the network', () => {

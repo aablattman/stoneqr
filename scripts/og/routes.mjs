@@ -1,8 +1,17 @@
 /**
  * One Open Graph card per route. Headlines are the page's own h1 so a shared link says the
  * same thing as the page it opens; the sub line is the meta description, cut to two lines.
- * `/` keeps the hand-made apps/site/static/og.png and is deliberately absent here.
+ * `/` is HOME_CARD, drawn to apps/site/static/og.png rather than og/, and kept out of this list
+ * because the list is also the sitemap's and the fonts' route list.
  */
+export const HOME_CARD = {
+	slug: '',
+	path: '',
+	headline: 'QR codes\nset in stone.',
+	sub: 'Generated in your browser, never uploaded, never expire.',
+	kicker: 'FREE · OPEN SOURCE · NO ACCOUNT · STONEQR.APP'
+};
+
 export const OG_ROUTES = [
 	{
 		slug: 'never-expires',

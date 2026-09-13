@@ -95,7 +95,7 @@ so the bulk page and the print-size page can use them too.
 
 | Primitive | Where | What it is |
 |---|---|---|
-| `SectionHeader.svelte` | components | h2 or h3 in Fraunces, optional badge slot on the right, optional one-line summary in ticket type shown only when the section is collapsed, a real chevron icon. Replaces every `<details><summary>` and the plain `<h2 class="text-xl">` headings. |
+| `SectionHeader.svelte` | components | h2 or h3 in the display face, optional badge slot on the right, optional one-line summary in ticket type shown only when the section is collapsed, a real chevron icon. Replaces every `<details><summary>` and the plain `<h2 class="text-xl">` headings. |
 | `.subhead` | app.css | A ticket label with a hairline rule after it: `COLOURS ————`. The grouping device inside a panel. |
 | `.row` | app.css | Grid `[label] [control] [readout]` at `auto 1fr auto`, readout in `.num`, so slider rows and short field rows align down the whole column. |
 | `Slider.svelte` | components | Native `<input type=range>` in a `.row`, with the track and thumb restyled (ink thumb, rule track, accent fill via `background-size` trick), label, unit, and an optional reset-to-default dot that appears when the value is not the default. |
@@ -966,9 +966,59 @@ to the internal portion of the QR code that's blank".
 - Not done: Basic and Advanced show the same crop controls, because a crop is not a number to
   hide; and the Artistic QR box gained nothing, only a model behind it.
 
+### 8n. Set in stone
+
+Built 2026-09-12. StoneQR and garrettholmes.com had drifted into the same look: cream paper, a
+light serif for headings, small mono capitals for labels. Garrett chose a rebrand over sharpening
+the specimen sheet, so the site now looks like what its name says, and all three of those shared
+traits are gone. Everything in §2 still holds; only the surface changed.
+
+- **Ground and surfaces.** Basalt (`--color-paper` #131618) with a fine SVG grain and a light
+  falling from above the page. Panels are slabs (`.sheet`: lit top edge, long shadow, 10 px
+  radius). Fields, type tiles, tiers, the segmented control, toggles, and the drop tile are
+  carved into the slab (`--carve`, `--color-field`). Whatever is pressed or chosen (the active
+  type tile, the chip, the segmented key, the Basic/Advanced key) is a raised limestone key.
+  Buttons are raised limestone by default and copper (`.btn-accent`) for the download.
+- **The token names stayed.** "paper" is the ground a thing sits on and "ink" is what is written
+  on it, so every page moved at once without renaming a utility. Surfaces that really are paper
+  take `.tablet`, which puts the light values back in scope: the preview card is `.plaque
+  .tablet`, a limestone tablet with the white stage let into it (`.plaque-stage`), so the empty
+  state, the scale mark, the badges, and any notice on it keep their contrast. Print resets the
+  tokens to paper in `@media print`.
+- **Drawn swatches are limestone inlays**, not stone, on purpose: they draw how the code will
+  look on paper, and the built-in logo icons are drawn in the code colour, which is black by
+  default. The chosen tile is ringed in copper.
+- **Type.** One family, Archivo. Body at normal width; headings, labels (`.ticket`, `.subhead`,
+  `.badge`, table heads), and the wordmark at width 125, weights 600 to 800. Mono survives only
+  for figures (`.num`, hex and numeric inputs). The captions under tiles use a capitals-only
+  face at width 87.5 so "MeCard" and "Rounded" fit their tiles between `lg` and `xl`. The home
+  heading is `.hero-cut`: "QR codes" in lit limestone (`.cut`), "set in stone." cut hollow in
+  copper (`.cut-hollow`); other pages keep a mixed-case expanded h1, because a long uppercase
+  sentence shouts. Font files and measurements are in `docs/performance.md`.
+- **Accent.** Oxidised copper #5ccaa5 on stone (`--color-on-accent` for text on it); the
+  tablet scope keeps the old print-safe #1f6f63. Contrast, measured: ink-3 is 5.2:1 on the
+  slabs and 4.5:1 on paper-3; Lighthouse accessibility 100 on `/` and `/bulk`.
+- **Motion.** The tablet settles into place once (`.set-down`), the empty preview's finder
+  marks draw themselves in, the reveal gains a short blur; all first-load only and all off under
+  `prefers-reduced-motion`.
+- **Page furniture.** The nav marks the current page with a short copper underscore rather than
+  a filled block; the header tagline shows from `xl` (at `lg` it wrapped onto a second row). The
+  footer ends with "Set in stone" cut hollow across its full width, `aria-hidden`. Below the
+  generator on `/`, the prose is the same words laid out as a heading column and two numbered
+  slabs.
+- **Brand assets.** `favicon.svg`, the icons from `bun run icons`, the manifest, and
+  `theme-color` are basalt, limestone, and copper. `bun run og` now draws `static/og.png` for
+  the home page as well (`HOME_CARD` in `scripts/og/routes.mjs`, decode-checked in
+  `test/og.test.ts`); the cards use flat fills because Chrome dithers canvas gradients, which
+  took each PNG from 80 KB to 500 KB.
+- Not touched: the engine, the renderers, the goldens, every export, the call-to-action frame
+  (Helvetica in the SVG, independent of the site fonts), the colour picker's site swatches
+  (those are print colours for a code, not the page's), and all copy.
+
 ## 9. Out of scope for this refresh
 
-- Dark mode. The paper look is the brand; a dark theme is a separate decision.
+- ~~Dark mode~~ — superseded by §8n: the site is now dark by design, a single look rather than a
+  theme toggle.
 - ~~Style presets~~ — built, see §8d.
 - ~~A draggable crop box for Photo QR~~ — built, see §8e.
 - Any change to the engine, the renderers, the goldens, the exports, or the SignUpCity hand-off.

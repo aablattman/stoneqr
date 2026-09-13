@@ -2,29 +2,18 @@
 <meta charset="utf-8" />
 <title>StoneQR Open Graph cards</title>
 <style>
-	/* The @font-face descriptor is how the canvas gets Fraunces' optical size and softness:
-	   ctx.font has no way to express font-variation-settings. */
+	/* One variable family: the card sets its width with ctx.fontStretch. */
 	@font-face {
-		font-family: 'OG Display';
-		src: url('/display.woff2') format('woff2-variations');
-		font-weight: 500;
-		font-variation-settings: 'opsz' 72, 'SOFT' 30, 'WONK' 0;
-	}
-	@font-face {
-		font-family: 'OG Sans';
-		src: url('/sans.woff2') format('woff2-variations');
-		font-weight: 400;
-	}
-	@font-face {
-		font-family: 'OG Mono';
-		src: url('/mono.woff2') format('woff2-variations');
-		font-weight: 500;
+		font-family: 'OG Archivo';
+		src: url('/archivo.woff2') format('woff2-variations');
+		font-weight: 100 900;
+		font-stretch: 62% 125%;
 	}
 	body {
 		margin: 0;
 		padding: 24px;
-		background: #1b1917;
-		color: #f4f0e8;
+		background: #0b0d0e;
+		color: #ebe6db;
 		font: 14px ui-monospace, monospace;
 		display: grid;
 		gap: 16px;
@@ -44,7 +33,7 @@
 		const status = document.getElementById('status');
 		const cards = await fetch('/cards.json').then((r) => r.json());
 		await Promise.all(
-			['OG Display', 'OG Sans', 'OG Mono'].map((f) => document.fonts.load(`500 52px "${f}"`))
+			['expanded 800 46px', '400 24px', 'expanded 600 14px'].map((f) => document.fonts.load(`${f} "OG Archivo"`))
 		);
 		await document.fonts.ready;
 
@@ -55,7 +44,7 @@
 			drawCard(canvas.getContext('2d'), card);
 			document.body.append(canvas);
 			const blob = await new Promise((r) => canvas.toBlob(r, 'image/png'));
-			await fetch(`/save/${card.slug}`, { method: 'POST', body: blob });
+			await fetch(`/save/${card.slug || 'home'}`, { method: 'POST', body: blob });
 			status.textContent = `Wrote ${card.slug}.png`;
 		}
 		status.textContent = `Done: ${cards.length} images written. You can close this tab.`;

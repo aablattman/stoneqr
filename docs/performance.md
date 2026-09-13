@@ -27,6 +27,18 @@ The fontsource faces stay imported in `app.css` as the fallback for characters o
 
 **Preloaded fonts.** The layout emits `<link rel="preload" as="font">` for the three files, so they start with the stylesheet instead of after it. The same three URLs go out as a `Link` header per page, generated into `static/_headers` by the fonts script; Cloudflare turns that into a 103 Early Hint, so a returning edge starts the fonts before the HTML body has been sent.
 
+**2026-09-12, the "set in stone" rebrand** (`docs/ui-refresh.md` §8n). Fraunces and Instrument Sans gave way to Archivo, cut from one variable file into three first-paint faces with their axes pinned, each under a family name of its own so it can never tie with the fontsource face in font matching (a face sharing the fontsource name, with a narrower range, lost the tie and the full file downloaded instead; the old JetBrains Mono subset had been losing the same way).
+
+| Face | File |
+| --- | ---: |
+| Archivo Text (body, width 100, weight 400 to 700) | 27 KB |
+| Archivo Display (headings and labels, width 125, weight 600 to 800) | 20 KB |
+| Archivo Caption (tile captions, capitals only, width 87.5, weight 600) | 5 KB |
+| JetBrains Mono (figures) | 27 KB |
+| First-paint fonts | 79 KB |
+
+One subset covering both widths and every weight was 70 KB and cost about 380 ms of first contentful paint in Lighthouse's throttled mobile run against the previous build; the split brings that to about 130 ms (1.51 s against 1.38 s), with LCP unchanged at about 3.2 s on `vite preview`. Leaving the caption face off the preload list made first paint worse, not better, because the type tiles are in the first screen. The SVG grain on the ground and the slabs measured nothing.
+
 **Dead settings removed.** `app.css` set the Fraunces `SOFT` and `WONK` axes, which the shipped fontsource file never carried. They are gone rather than misleading the next reader.
 
 **Caching.** Icons, the manifest, and the Open Graph cards were served with `max-age=0`; they now cache for a day.

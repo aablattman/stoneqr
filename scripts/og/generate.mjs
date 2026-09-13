@@ -14,7 +14,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encode } from '../../packages/engine/src/encode.ts';
-import { OG_ROUTES } from './routes.mjs';
+import { HOME_CARD, OG_ROUTES } from './routes.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -25,13 +25,13 @@ const SITE = 'https://stoneqr.app';
 const PORT = 5199;
 
 const FONTS = {
-	'display.woff2': `${fontDir}/fraunces/files/fraunces-latin-full-normal.woff2`,
-	'sans.woff2': `${fontDir}/instrument-sans/files/instrument-sans-latin-wght-normal.woff2`,
-	'mono.woff2': `${fontDir}/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2`
+	'archivo.woff2': `${fontDir}/archivo/files/archivo-latin-wdth-normal.woff2`
 };
 
-const cards = OG_ROUTES.map((route) => {
-	const qr = encode(`${SITE}${route.path}`, { ecc: 'M' });
+// The home card is drawn too, to apps/site/static/og.png, so the page every share of the site
+// opens on carries the same look as the rest.
+const cards = [HOME_CARD, ...OG_ROUTES].map((route) => {
+	const qr = encode(route.path ? `${SITE}${route.path}` : SITE, { ecc: 'M' });
 	return { ...route, matrix: qr.matrix, size: qr.size };
 });
 
@@ -53,12 +53,14 @@ const server = Bun.serve({
 
 		if (request.method === 'POST' && url.pathname.startsWith('/save/')) {
 			const slug = url.pathname.slice('/save/'.length);
-			if (!OG_ROUTES.some((r) => r.slug === slug)) return new Response('unknown route', { status: 400 });
+			const home = slug === 'home';
+			if (!home && !OG_ROUTES.some((r) => r.slug === slug)) return new Response('unknown route', { status: 400 });
 			const bytes = new Uint8Array(await request.arrayBuffer());
-			writeFileSync(resolve(outDir, `${slug}.png`), bytes);
+			const target = home ? resolve(outDir, '../og.png') : resolve(outDir, `${slug}.png`);
+			writeFileSync(target, bytes);
 			written.add(slug);
-			console.log(`  ${String(bytes.length).padStart(7)} bytes  og/${slug}.png`);
-			if (written.size === OG_ROUTES.length) finish();
+			console.log(`  ${String(bytes.length).padStart(7)} bytes  ${home ? 'og.png' : `og/${slug}.png`}`);
+			if (written.size === cards.length) finish();
 			return new Response('ok');
 		}
 		return new Response('not found', { status: 404 });
@@ -77,4 +79,4 @@ writeFileSync(
 		OG_ROUTES.map((r) => `\t'${r.slug}'`).join(',\n') +
 		`\n]);\n`
 );
-console.log(`\nWrote ${written.size} images and the manifest.`);
+console.log(`\nWrote ${written.size} images (og.png and og/*) and the manifest.`);
