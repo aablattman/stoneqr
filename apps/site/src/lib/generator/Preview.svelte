@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { rasterize, verifyRasterAsync, type RasterImage } from '@stoneqr/engine';
+	import { untrack } from 'svelte';
+	import { rasterize, verifyRasterAsync, type RasterImage, type HalftoneResult } from '@stoneqr/engine';
 	import { renderStyled } from '$lib/styled';
 	import { svgToCanvas, canvasImageData } from '$lib/svg-raster';
 	import { cropLogo, isFullCrop } from '$lib/logo-crop';
 	import { SITE } from '$lib/site';
 	import Icon from '$lib/components/Icon.svelte';
 	import { describe, type Design } from './state.svelte';
+	import { fingerprint, keyOf, verdicts, styledRenders, halftoneRenders, halftoneWeight } from './memo';
 
 	let { design, advanced = false }: { design: Design; advanced?: boolean } = $props();
 
@@ -69,9 +71,31 @@
 			imageOffsetX: design.halftoneOffsetX,
 			imageOffsetY: design.halftoneOffsetY
 		};
+		const seq = ++halftoneSeq;
+		// The same picture through the same ladder gives the same raster, so a render seen before
+		// is shown again at once: no wait, no fallback ladder, no second decode. The key covers the
+		// symbol (payload, level, version, mask) and every option, with the picture by fingerprint.
+		const key = keyOf({ k: 'halftone', payload, ecc: design.ecc, version: qr.version, size: qr.size, mask: design.mask, image: fingerprint(image), ...opts });
+		const show = (result: HalftoneResult, blob: Blob) => {
+			design.halftoneRaster = result.raster;
+			design.halftoneOpts = result.opts;
+			design.halftoneNote = result.note;
+			design.verify = result.ok ? 'ok' : 'fail';
+			design.verifyDetail = result.ok ? '' : result.note;
+			halftoneError = '';
+			halftoneBusy = false;
+			if (design.halftonePreviewUrl) URL.revokeObjectURL(design.halftonePreviewUrl);
+			design.halftonePreviewUrl = URL.createObjectURL(blob);
+		};
+		const hit = halftoneRenders.get(key);
+		if (hit) {
+			// `show` reads the old preview URL to revoke it. Inside the effect that read would make
+			// the URL a dependency of the effect that writes it, and the effect would chase itself.
+			untrack(() => show(hit.result, hit.blob));
+			return;
+		}
 		design.verify = 'checking';
 		halftoneBusy = true;
-		const seq = ++halftoneSeq;
 		const t = setTimeout(async () => {
 			try {
 				const [{ halftoneWithFallback }, { rasterToPngBlob }, source] = await Promise.all([
@@ -80,20 +104,11 @@
 					imageFor(image)
 				]);
 				const result = halftoneWithFallback(qr, source, payload, opts);
+				const blob = await rasterToPngBlob(result.raster);
+				const render = { result, blob };
+				halftoneRenders.set(key, render, halftoneWeight(render));
 				if (seq !== halftoneSeq) return;
-				design.halftoneRaster = result.raster;
-				design.halftoneOpts = result.opts;
-				design.halftoneNote = result.note;
-				design.verify = result.ok ? 'ok' : 'fail';
-				design.verifyDetail = result.ok ? '' : result.note;
-				halftoneError = '';
-				const url = URL.createObjectURL(await rasterToPngBlob(result.raster));
-				if (seq !== halftoneSeq) {
-					URL.revokeObjectURL(url);
-					return;
-				}
-				if (design.halftonePreviewUrl) URL.revokeObjectURL(design.halftonePreviewUrl);
-				design.halftonePreviewUrl = url;
+				show(result, blob);
 			} catch (e) {
 				if (seq !== halftoneSeq) return;
 				halftoneError = e instanceof Error ? e.message : String(e);
@@ -207,9 +222,20 @@
 		};
 		const widthMm = design.widthMm;
 		const seq = ++styledSeq;
+		// The library is deterministic, so the same options give the same markup: a render seen
+		// before goes straight to the preview, and the verdict memo below then answers for it too.
+		const key = keyOf({ k: 'styled', widthMm, ...opts, logo: opts.logo && fingerprint(opts.logo) });
+		const hit = styledRenders.get(key);
+		if (hit) {
+			design.styledScale = hit.scale;
+			design.styledSvg = hit.svg;
+			design.styledError = '';
+			return;
+		}
 		const t = setTimeout(async () => {
 			try {
 				const r = await renderStyled(opts, widthMm);
+				styledRenders.set(key, r, r.svg.length * 2);
 				if (seq !== styledSeq) return;
 				design.styledScale = r.scale;
 				design.styledSvg = r.svg;
@@ -223,6 +249,9 @@
 	});
 
 	// Verification: debounced 300 ms; plain codes decode from a canvas-free raster, styled from a canvas.
+	// A verdict is remembered by exactly what was decoded (the plain code's inputs, or the styled
+	// markup by fingerprint), so a design seen before shows its badge at once with no debounce and
+	// no decode. Only a real decode is remembered; an error on the way is not.
 	let verifySeq = 0;
 	$effect(() => {
 		const qr = design.encoded;
@@ -231,23 +260,35 @@
 		const styledSvg = design.styledSvg;
 		const bg = design.bgColor;
 		const fg = design.fg;
+		const quietZone = design.quietZone;
+		const scale = design.styledScale;
 		if (design.halftoneActive) return; // the halftone effect above owns verification
 		if (!qr || !payload || (styled && !styledSvg)) {
 			design.verify = 'idle';
 			return;
 		}
-		design.verify = 'checking';
 		const seq = ++verifySeq;
+		const key = styled
+			? keyOf({ k: 'styled', svg: fingerprint(styledSvg), bg, quietZone, size: qr.size, scale })
+			: keyOf({ k: 'plain', payload, ecc: design.ecc, version: qr.version, size: qr.size, mask: design.mask, quietZone, fg, bg });
+		const detail = styled ? 'The styled code did not decode. Try a larger logo margin, a smaller logo, plainer dots, or more contrast.' : 'This code did not decode. Increase contrast or the quiet zone.';
+		const known = verdicts.get(key);
+		if (known !== undefined) {
+			design.verify = known ? 'ok' : 'fail';
+			design.verifyDetail = known ? '' : detail;
+			return;
+		}
+		design.verify = 'checking';
 		const t = setTimeout(async () => {
 			try {
 				let ok: boolean;
 				if (!styled) {
 					const px = 8;
-					const img = rasterize(qr, { pxPerModule: px, quietZone: design.quietZone, fg: hexToRgb(fg), bg: bg === 'transparent' ? [255, 255, 255] : hexToRgb(bg) });
+					const img = rasterize(qr, { pxPerModule: px, quietZone, fg: hexToRgb(fg), bg: bg === 'transparent' ? [255, 255, 255] : hexToRgb(bg) });
 					ok = (await verifyRasterAsync(img, payload)).ok;
 				} else {
 					// Keep 8 px per module for the code itself; a frame makes the artwork wider.
-					const side = Math.round((qr.size + 2 * design.quietZone) * 8 * design.styledScale);
+					const side = Math.round((qr.size + 2 * quietZone) * 8 * scale);
 					const canvas = await svgToCanvas(styledSvg, side, bg === 'transparent' ? '#ffffff' : undefined);
 					const data = canvasImageData(canvas);
 					ok = (await verifyRasterAsync(data, payload)).ok;
@@ -257,9 +298,10 @@
 						ok = (await verifyRasterAsync(canvasImageData(c2), payload)).ok;
 					}
 				}
+				verdicts.set(key, ok);
 				if (seq !== verifySeq) return;
 				design.verify = ok ? 'ok' : 'fail';
-				design.verifyDetail = ok ? '' : styled ? 'The styled code did not decode. Try a larger logo margin, a smaller logo, plainer dots, or more contrast.' : 'This code did not decode. Increase contrast or the quiet zone.';
+				design.verifyDetail = ok ? '' : detail;
 			} catch (e) {
 				if (seq !== verifySeq) return;
 				design.verify = 'fail';

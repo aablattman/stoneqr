@@ -1072,3 +1072,37 @@ folded on every page.
   rather than a set of options they tune; `/photo` and a restored picture still open it.
 - **Still folded on `/wifi`, `/vcard`, `/event`** (the form is the work there) **and `/photo`**
   (Style open would push the panel the visitor came for down by a screen).
+
+### 8p. Verdicts remembered
+
+2026-09-14, from Garrett: switching back and forth between designs should be "buttery smooth"
+rather than working the scannability out over and over.
+
+Every change used to start the same three waits: a 60 ms debounce and a library render for a
+styled code, then a 300 ms debounce, a rasterise, and a decode for the badge; Artistic QR ran its
+whole fallback ladder each time. Returning to a preset seen a second earlier paid all of it again
+and the badge flashed "Checking…" on the way.
+
+- **`lib/generator/memo.ts`** holds three module-scope memos, bounded by bytes and evicting the
+  least recently used: decode verdicts (weightless, 256 entries), styled SVGs by their option set
+  (24 MB), and Artistic QR renders with the PNG the preview shows (48 MB). Module scope means they
+  survive the Preview remounting and the client-side navigation between landing pages.
+- **Keys are the inputs, exactly.** A plain verdict is keyed on the payload, level, version, mask,
+  quiet zone, and both colours; a styled verdict on a fingerprint of the very markup that was
+  rasterised plus the background and scale; a styled render on its whole option set with the
+  logo by fingerprint; an Artistic QR render on the symbol, every option, and the picture by
+  fingerprint. `fingerprint` is cyrb53 with the length appended, so a megabyte data URL sits in a
+  key without the key holding it.
+- **Nothing is assumed.** A verdict is stored only after a real decode; an error on the way is
+  not. A hit is the same bytes that decoded, or did not, before, so the badge on a return is the
+  badge that check produced. What is checked has not changed, only whether the same check runs
+  twice.
+- **On a hit there is no debounce**: the render effect writes the SVG at once, the verdict effect
+  answers for it in the same flush, and the badge goes straight to its state without passing
+  through "Checking…".
+- Measured on the dev server, presets on a plain URL: a first visit settles in about 400 ms with
+  the "Checking…" flash, a return in 1 ms with none. Artistic QR tones on the heart shape: about
+  1.3 s first, 1 ms on return, and the preview image swaps with it.
+- One trap on the way: the Artistic QR hit path revokes the previous object URL, and reading that
+  URL inside the effect that writes it made the effect chase itself (`effect_update_depth_exceeded`)
+  and left a dead URL in the preview. The read is under `untrack`.
