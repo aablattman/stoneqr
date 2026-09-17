@@ -1,7 +1,8 @@
 /**
  * Check that every SVG logo fixture survives `prepareSvgLogo` and comes out safe.
  *
- *   bun run logo-fixtures        # then open the URL it prints; it reports and exits
+ *   bun run logo-fixtures              # then open the URL it prints; it reports and exits
+ *   bun run logo-fixtures --headless   # the same, driven in headless Chrome (what CI runs)
  *
  * Why a browser: the preparation is deliberately built on the DOM parser, the selector engine,
  * and layout, because a hand-rolled sanitiser on strings is how these things go wrong. That has
@@ -14,6 +15,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { awaitPage } from '../headless.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -63,8 +65,7 @@ const server = Bun.serve({
 	}
 });
 
-console.log(`Open http://localhost:${PORT}/ to check ${names.length} logo fixtures`);
-await done;
+await awaitPage(`http://localhost:${PORT}/`, done, { prompt: `to check ${names.length} logo fixtures`, timeoutMs: 120_000 });
 server.stop(true);
 if (failures) {
 	console.error(`${failures} check${failures === 1 ? '' : 's'} failed.`);

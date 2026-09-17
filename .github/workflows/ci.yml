@@ -18,3 +18,22 @@ jobs:
       - run: bun run --cwd apps/site test
       - run: bun run --cwd apps/site build
       - run: node scripts/budget.mjs apps/site/build
+  browser-checks:
+    # The SVG-logo fixtures and the scan sheets are checked in a real browser (no jsdom here, by
+    # rule). Chrome ships on the Ubuntu image, so the scripts drive it headless.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.4.0'
+      - run: bun install --frozen-lockfile
+      - run: bun run logo-fixtures --headless
+      - run: bun run scan-sheets --headless
+      # The sheet CI built, printable by anyone filling in docs/scan-matrix.md.
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: scan-sheets
+          path: docs/scan-sheets.pdf
+          if-no-files-found: ignore
