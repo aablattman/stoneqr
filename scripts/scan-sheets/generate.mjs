@@ -4,6 +4,7 @@
  * sheet to pencil results on.
  *
  *   bun run scan-sheets                 # then open the URL it prints (any browser); it writes and exits
+ *   bun run scan-sheets --headless      # the same, driven in headless Chrome (what CI runs)
  *   bun run scan-sheets -- --photo ~/Pictures/some.jpg   # use a real photo for the Photo QR rows
  *
  * Why a browser: the styled codes come from @liquid-js/qr-code-styling, which needs a DOM to
@@ -14,6 +15,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { awaitPage } from '../headless.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -81,8 +83,10 @@ const server = Bun.serve({
 	}
 });
 
-console.log(`Open http://localhost:${PORT}/ to build docs/scan-sheets.pdf${photoPath ? ` (photo: ${photoPath})` : ' (synthetic photo; pass --photo <file> for a real one)'}`);
-await done;
+await awaitPage(`http://localhost:${PORT}/`, done, {
+	prompt: `to build docs/scan-sheets.pdf${photoPath ? ` (photo: ${photoPath})` : ' (synthetic photo; pass --photo <file> for a real one)'}`,
+	timeoutMs: 300_000
+});
 server.stop(true);
 if (problems) {
 	console.error(`Done, but ${problems} thing${problems === 1 ? '' : 's'} above need attention.`);

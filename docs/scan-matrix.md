@@ -4,7 +4,7 @@ Real-phone results for every kind of code the generator makes, at the sizes peop
 
 ## How to run it
 
-1. **Build the sheets.** From the repo root run `bun run scan-sheets`, open the URL it prints in any browser, and wait for "Done". It writes `docs/scan-sheets.pdf` (ignored by git; about 2 MB, 15 pages). Pass `-- --photo ~/Pictures/some.jpg` to use a real photograph for the Photo QR rows instead of the painted stand-in; note which you used in the results.
+1. **Build the sheets.** From the repo root run `bun run scan-sheets --headless` (or `bun run scan-sheets` and open the URL it prints in any browser) and wait for "Done". It writes `docs/scan-sheets.pdf` (ignored by git; about 2 MB, 15 pages). Pass `-- --photo ~/Pictures/some.jpg` to use a real photograph for the Photo QR rows instead of the painted stand-in; note which you used in the results.
 2. **Print** on plain paper at 100% scale, never "fit to page". A laser print is the baseline. If you have an inkjet, print a second copy later and record it as a second pass; inkjet dot gain is what turns silhouette dots grey.
 3. **Check the print** with a ruler: A4 (50 mm) should measure 50 mm across the quiet zone. If it does not, the printer scaled the page.
 4. **Three phones**, the default camera app on each, plus Google Lens on one of them. Write the model and OS version in the column headers below. The interesting spread is one recent iPhone, one recent Android, and one older or cheaper Android.

@@ -2,6 +2,7 @@
  * Regenerate the per-route Open Graph images.
  *
  *   bun run og            # then open the URL it prints (any browser); it writes and exits
+ *   bun run og --headless # the same, driven in headless Chrome
  *
  * Why a browser: the cards are typeset in the site's own fonts, and rasterising text in Node
  * would mean a headless renderer and a font pipeline. The page draws each card on a canvas and
@@ -15,6 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encode } from '../../packages/engine/src/encode.ts';
 import { HOME_CARD, OG_ROUTES } from './routes.mjs';
+import { awaitPage } from '../headless.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -67,8 +69,7 @@ const server = Bun.serve({
 	}
 });
 
-console.log(`Open http://localhost:${PORT}/ to draw ${cards.length} cards into apps/site/static/og/`);
-await done;
+await awaitPage(`http://localhost:${PORT}/`, done, { prompt: `to draw ${cards.length} cards into apps/site/static/og/`, timeoutMs: 120_000 });
 server.stop(true);
 
 // The site reads this list to pick a card; anything not in it falls back to /og.png.
