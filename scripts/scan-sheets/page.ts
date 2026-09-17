@@ -4,10 +4,9 @@
  * POST the PDF back to generate.mjs.
  *
  * The renderers are the site's own (styled.ts, halftone.ts, glyphs.ts) and the engine's, so what
- * lands on paper is what the generator would produce for the same settings. Imports go through
- * apps/site/node_modules so Bun resolves the same copies the site uses.
+ * lands on paper is what the generator would produce for the same settings.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from '../../apps/site/node_modules/pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import {
 	encode,
 	payloads,
@@ -25,7 +24,7 @@ import {
 	type Ecc,
 	type HalftoneOptions,
 	type RasterImage
-} from '../../apps/site/node_modules/@stoneqr/engine';
+} from '@stoneqr/engine';
 import { renderStyled, type StyleOptions } from '../../apps/site/src/lib/styled';
 import { fitLogo, LOGO_WIDTH_MAX, LOGO_WIDTH_MIN } from '../../apps/site/src/lib/logo-size';
 import { prepareSvgLogo } from '../../apps/site/src/lib/logo-svg';
@@ -430,9 +429,9 @@ async function photoDataUrl(): Promise<{ url: string; synthetic: boolean }> {
 	const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff) * 2 - 1;
 	for (let i = 0; i < img.data.length; i += 4) {
 		const n = rnd() * 18;
-		img.data[i] += n;
-		img.data[i + 1] += n;
-		img.data[i + 2] += n;
+		img.data[i] = img.data[i]! + n;
+		img.data[i + 1] = img.data[i + 1]! + n;
+		img.data[i + 2] = img.data[i + 2]! + n;
 	}
 	ctx.putImageData(img, 0, 0);
 	return { url: c.toDataURL('image/jpeg', 0.9), synthetic: true };
@@ -444,7 +443,7 @@ async function photoDataUrl(): Promise<{ url: string; synthetic: boolean }> {
  * sound; whether a phone reads it as printed is exactly what the D and L10 rows are for.
  */
 const luminance = (hex: string) => hexToRgb(hex).reduce((a, c) => a + c, 0);
-function negativeIfInverted<T extends { data: Uint8ClampedArray }>(img: T, fg: string, bg: string): T {
+function negativeIfInverted<T extends { data: Uint8Array | Uint8ClampedArray }>(img: T, fg: string, bg: string): T {
 	if (luminance(fg) <= luminance(bg)) return img;
 	const d = img.data;
 	for (let i = 0; i < d.length; i += 4) {
@@ -547,8 +546,8 @@ async function renderItem(item: Item, pictures: Pictures): Promise<Rendered> {
 	}
 	// Photo QR
 	const qr = encode(spec.payload, { ecc: 'H', minVersion: halftoneVersionFor(spec.payload) });
-	const src =
-		spec.picture === 'photo' ? pictures.photo : spec.picture === 'favicon' ? pictures.favicon.url : glyphDataUrl(GLYPHS.find((g) => g.id === spec.picture.glyph)!);
+	const picture = spec.picture;
+	const src = picture === 'photo' ? pictures.photo : picture === 'favicon' ? pictures.favicon.url : glyphDataUrl(GLYPHS.find((g) => g.id === picture.glyph)!);
 	const source: RasterImage = await loadImageRaster(src, 1024);
 	const result = halftoneWithFallback(qr, source, spec.payload, spec.opts);
 	const total = qr.size + 2 * QUIET;
@@ -919,7 +918,7 @@ async function main(): Promise<void> {
 	sheet.numberPages();
 
 	const bytes = await doc.save();
-	await fetch('/save', { method: 'POST', body: bytes, headers: { 'x-decode-failures': String(failures), 'x-matrix-drift': String(drift) } });
+	await fetch('/save', { method: 'POST', body: new Uint8Array(bytes), headers: { 'x-decode-failures': String(failures), 'x-matrix-drift': String(drift) } });
 	const trouble = [failures ? `${failures} failed the software decode` : '', drift ? `${drift} row ID out of step with the matrix` : '']
 		.filter(Boolean)
 		.join(', ');

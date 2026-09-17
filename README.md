@@ -29,7 +29,7 @@ bun run sitemap    # rewrite sitemap.xml with lastmod dates from git (deploy.sh 
 bun run fonts      # rebuild the trimmed first-paint fonts and their preload headers
 bun run scan-sheets # build docs/scan-sheets.pdf, the printable sheets for the real-phone scan matrix (add --headless to skip the tab; CI runs this)
 bun run logo-fixtures # check the SVG-logo fixtures in a real browser (add --headless to skip the tab; CI runs this)
-bun run check      # svelte-check
+bun run check      # svelte-check, then tsc over the scripts
 bun run build      # static output in apps/site/build
 ./deploy.sh        # build + wrangler pages deploy
 ```

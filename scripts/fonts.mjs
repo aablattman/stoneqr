@@ -26,11 +26,10 @@ import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import subsetFont from '../apps/site/node_modules/subset-font/index.js';
+import subsetFont from 'subset-font';
 import { OG_ROUTES } from './og/routes.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const src = resolve(root, 'apps/site/node_modules/@fontsource-variable');
 const outDir = resolve(root, 'apps/site/static/fonts');
 
 /** Basic Latin: ASCII, Latin-1 Supplement, and the punctuation the site copy uses. */
@@ -106,7 +105,7 @@ mkdirSync(outDir, { recursive: true });
 const faces = [];
 const hrefs = [];
 for (const f of FAMILIES) {
-	const input = readFileSync(resolve(src, f.file));
+	const input = readFileSync(fileURLToPath(import.meta.resolve(`@fontsource-variable/${f.file}`)));
 	const out = await subsetFont(input, f.text ?? text, { targetFormat: 'woff2', variationAxes: f.axes });
 	const hash = createHash('sha256').update(out).digest('hex').slice(0, 8);
 	const name = `${f.name}.${hash}.woff2`;

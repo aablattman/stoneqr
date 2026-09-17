@@ -1,0 +1,19 @@
+{
+  "name": "@stoneqr/scripts",
+  "private": true,
+  "description": "The build and check scripts: Open Graph cards, icons, fonts, the sitemap, the logo-fixture check, and the scan sheets. A workspace of its own so they declare what they import instead of reaching into another package's node_modules.",
+  "type": "module",
+  "scripts": {
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@stoneqr/engine": "workspace:*",
+    "pdf-lib": "^1.17.1",
+    "subset-font": "^2.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

@@ -15,7 +15,7 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { encodePng } from '../packages/engine/src/export/png.ts';
+import { encodePng } from '@stoneqr/engine/export/png';
 
 const outDir = resolve(dirname(fileURLToPath(import.meta.url)), '../apps/site/static');
 

@@ -5,13 +5,14 @@
   "license": "MIT",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "scripts"
   ],
   "scripts": {
     "dev": "bun run --cwd apps/site dev",
     "build": "bun run --cwd packages/engine build && bun run --cwd apps/site build",
     "test": "bun run --cwd packages/engine test && bun run --cwd apps/site test",
-    "check": "bun run --cwd apps/site check",
+    "check": "bun run --cwd apps/site check && bun run --cwd scripts check",
     "deploy": "./deploy.sh",
     "budget": "node scripts/budget.mjs apps/site/build",
     "og": "bun run scripts/og/generate.mjs",

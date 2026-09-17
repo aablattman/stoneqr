@@ -1,0 +1,18 @@
+{
+  // The browser halves of the scripts (each page.ts) run in Chrome, so the DOM is in lib and Bun's
+  // types are not. The .mjs servers next to them are plain JavaScript and stay unchecked.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["**/*.ts"]
+}
