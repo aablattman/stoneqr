@@ -22,15 +22,15 @@ plan.md           scope, architecture, milestones
 ```bash
 bun install
 bun run dev        # site at http://localhost:5173
-bun run test       # unit tests (vitest): engine, then the site's pure modules
+bun run test       # vitest (engine, then the site's pure modules), then the logo-fixture and scan-sheet checks in headless Chrome (found on its own, or set CHROME_PATH)
 bun run og         # redraw the per-route Open Graph cards (opens a local page; add --headless to skip the tab)
 bun run icons      # redraw favicon.ico, apple-touch-icon.png, and the manifest icons
 bun run sitemap    # rewrite sitemap.xml with lastmod dates from git (deploy.sh does this too)
 bun run fonts      # rebuild the trimmed first-paint fonts and their preload headers
-bun run scan-sheets # build docs/scan-sheets.pdf, the printable sheets for the real-phone scan matrix (add --headless to skip the tab; CI runs this)
-bun run logo-fixtures # check the SVG-logo fixtures in a real browser (add --headless to skip the tab; CI runs this)
-bun run check      # svelte-check
-bun run build      # static output in apps/site/build
+bun run scan-sheets # build docs/scan-sheets.pdf, the printable sheets for the real-phone scan matrix (add --headless to skip the tab; bun run test and CI run this)
+bun run logo-fixtures # check the SVG-logo fixtures in a real browser (add --headless to skip the tab; bun run test and CI run this)
+bun run check      # every type-check: the engine (src and tests), svelte-check, then tsc over the scripts
+bun run build      # static output in apps/site/build, then the size budget
 ./deploy.sh        # build + wrangler pages deploy
 ```
 

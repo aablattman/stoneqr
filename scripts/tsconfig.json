@@ -1,0 +1,23 @@
+{
+  // The browser halves of the scripts (each page.ts) run in Chrome, so the DOM is in lib and Bun's
+  // types are not. The .mjs servers next to them are plain JavaScript and stay unchecked.
+  //
+  // The pages import site modules under apps/site/src/lib, which svelte-check holds to the site's
+  // rules; here those modules meet the engine's (noUncheckedIndexedAccess on, no $lib alias, no Vite
+  // client types). An error this check reports inside apps/site is a real finding to fix in that
+  // file, not a misconfiguration.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": ["**/*.ts"]
+}

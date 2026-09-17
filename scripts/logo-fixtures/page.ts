@@ -13,7 +13,7 @@ import { fitLogo, LOGO_WIDTH_MAX } from '../../apps/site/src/lib/logo-size';
 import { LOGO_ICONS, logoIconDataUrl, logoIconSvg } from '../../apps/site/src/lib/logo-icons';
 import { renderStyled } from '../../apps/site/src/lib/styled';
 import { svgToCanvas, canvasImageData } from '../../apps/site/src/lib/svg-raster';
-import { encode, verifyImageData } from '../../apps/site/node_modules/@stoneqr/engine';
+import { encode, verifyImageData } from '@stoneqr/engine';
 
 const PAYLOAD = 'https://stoneqr.app/logo';
 const status = document.getElementById('status')!;
@@ -107,7 +107,7 @@ async function check(name: string, source: string, width = 0.2, clean = false, p
 	const side = (qr.size + 8) * 10;
 	const canvas = await svgToCanvas(rendered.svg, side, '#ffffff');
 	const decoded = verifyImageData(canvasImageData(canvas), PAYLOAD);
-	if (!decoded.ok) line(false, `${name}: the code did not decode (${decoded.note ?? 'no reason given'})`);
+	if (!decoded.ok) line(false, `${name}: the code did not decode (${decoded.reason ?? 'no reason given'})`);
 
 	const shape = aspect > 1.05 ? 'tall' : aspect < 0.95 ? 'wide' : 'square';
 	line(
@@ -180,7 +180,7 @@ async function checkCropped(name: string, source: string, crop: CropRect, expect
 	const side = (qr.size + 8) * 10;
 	const canvas = await svgToCanvas(rendered.svg, side, '#ffffff');
 	const decoded = verifyImageData(canvasImageData(canvas), PAYLOAD);
-	if (!decoded.ok) line(false, `${name}: the code did not decode (${decoded.note ?? 'no reason given'})`);
+	if (!decoded.ok) line(false, `${name}: the code did not decode (${decoded.reason ?? 'no reason given'})`);
 	line(true, `${name}: crop ${crop.w}×${crop.h} at (${crop.u}, ${crop.v}), measured ${measured.w}×${measured.h}, hole ${fit.hideX}×${fit.hideY}, decodes`);
 
 	const fig = document.createElement('figure');

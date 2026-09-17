@@ -23,7 +23,6 @@
         "@sveltejs/vite-plugin-svelte": "^7.1.2",
         "@tailwindcss/vite": "^4.3.3",
         "@types/papaparse": "^5.3.16",
-        "subset-font": "^2.7.0",
         "svelte": "^5.56.1",
         "svelte-check": "^4.6.0",
         "tailwindcss": "^4.3.3",
@@ -46,6 +45,19 @@
         "@types/node": "^26.4.1",
         "typescript": "^5.9.3",
         "vitest": "^4.1.11",
+      },
+    },
+    "scripts": {
+      "name": "@stoneqr/scripts",
+      "dependencies": {
+        "@fontsource-variable/archivo": "^5.3.0",
+        "@fontsource-variable/jetbrains-mono": "^5.3.0",
+        "@stoneqr/engine": "workspace:*",
+        "pdf-lib": "^1.17.1",
+        "subset-font": "^2.7.0",
+      },
+      "devDependencies": {
+        "typescript": "^6.0.3",
       },
     },
   },
@@ -171,6 +183,8 @@
     "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
     "@stoneqr/engine": ["@stoneqr/engine@workspace:packages/engine"],
+
+    "@stoneqr/scripts": ["@stoneqr/scripts@workspace:scripts"],
 
     "@stoneqr/site": ["@stoneqr/site@workspace:apps/site"],
 
@@ -447,6 +461,8 @@
     "zimmerframe": ["zimmerframe@1.1.5", "", {}, "sha512-msJxIvYDYcoNL+PJsu+7qmpDWsYmAxTY+2TNYXXF0hzBzBk0BMecOqDOG/EckUoKCuKwObfbugIl8QpqHDXeFA=="],
 
     "@emnapi/runtime/tslib": ["tslib@2.8.1", "", {}, "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="],
+
+    "@stoneqr/scripts/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@stoneqr/site/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 

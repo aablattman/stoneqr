@@ -14,7 +14,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { encode } from '../../packages/engine/src/encode.ts';
+import { encode } from '@stoneqr/engine';
 import { HOME_CARD, OG_ROUTES } from './routes.mjs';
 import { awaitPage } from '../headless.mjs';
 
@@ -22,12 +22,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
 const outDir = resolve(root, 'apps/site/static/og');
 const manifest = resolve(root, 'apps/site/src/lib/og-images.ts');
-const fontDir = resolve(root, 'apps/site/node_modules/@fontsource-variable');
 const SITE = 'https://stoneqr.app';
 const PORT = 5199;
 
 const FONTS = {
-	'archivo.woff2': `${fontDir}/archivo/files/archivo-latin-wdth-normal.woff2`
+	'archivo.woff2': fileURLToPath(import.meta.resolve('@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2'))
 };
 
 // The home card is drawn too, to apps/site/static/og.png, so the page every share of the site
