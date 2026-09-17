@@ -24,4 +24,4 @@ Read `plan.md` first; it is the source of truth for scope and architecture. `CLA
 
 ## Pull requests
 
-Small and focused. Run `bun run test` and `bun run check` first. If you add a route, add it to `scripts/og/routes.mjs` and run `bun run og` so it gets an Open Graph card and a sitemap entry.
+Small and focused. Run `bun run test` and `bun run check` first. CI also runs `bun run logo-fixtures --headless` and `bun run scan-sheets --headless`, the two checks that need a real browser; run them the same way locally (Chrome is found on its own, or set `CHROME_PATH`), or without the flag and open the URL they print. If you add a route, add it to `scripts/og/routes.mjs` and run `bun run og` so it gets an Open Graph card and a sitemap entry.

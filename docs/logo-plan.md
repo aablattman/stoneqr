@@ -175,8 +175,9 @@ framed PDF paths both rasterised and decoded.
    `apps/site/test/fixtures/logos/`: an Illustrator export with classes, an Inkscape file with
    its namespaces, a Figma export with `clip0` ids, one with no viewBox, one with a `<script>`,
    and one with `<text>`. The check is a script step, not a memory: `scripts/logo-fixtures/`
-   as a Bun server plus page like `bun run og`, rendering each fixture through `renderStyled`
-   and asserting the output decodes and contains no `<script`, `on*=`, or external `href`.
+   as a Bun server plus page like `bun run og` (`--headless` drives Chrome unattended, which is
+   how CI runs it), rendering each fixture through `renderStyled` and asserting the output
+   decodes and contains no `<script`, `on*=`, or external `href`.
 
 ### Phase 3: proof on paper — sheets built 2026-09-06, print outstanding
 
